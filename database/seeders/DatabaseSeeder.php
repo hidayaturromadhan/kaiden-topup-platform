@@ -326,8 +326,8 @@ class DatabaseSeeder extends Seeder
         // 4. Default Settings Seed
         Setting::set('ign_checker_enabled', 'true', false, 'Feature flag pengecekan nickname otomatis via GameCheckService');
         Setting::set('digiflazz_low_balance_threshold', '500000', false, 'Ambang batas saldo minimum Digiflazz untuk memicu warning badge');
-        Setting::set('midtrans_server_key', env('MIDTRANS_SERVER_KEY', 'SB-Mid-server-3PP7h2ArGhy9IvVCiaMfS1cZ'), true, 'Midtrans Sandbox Server Key');
-        Setting::set('midtrans_client_key', env('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-JFtPNzgFuR3e_w4m'), false, 'Midtrans Sandbox Client Key');
+        Setting::set('midtrans_server_key', env('MIDTRANS_SERVER_KEY', 'your-midtrans-server-key'), true, 'Midtrans Server Key');
+        Setting::set('midtrans_client_key', env('MIDTRANS_CLIENT_KEY', 'your-midtrans-client-key'), false, 'Midtrans Client Key');
         Setting::set('midtrans_is_production', 'false', false, 'Mode integrasi Midtrans (false = Sandbox, true = Production)');
         Setting::set('mock_digiflazz_deposit', '2750000', false, 'Saldo deposit simulasi untuk pengujian lokal');
         Setting::set('whatsapp_number', '6281234567890', false, 'Nomor WhatsApp resmi Customer Support untuk wa.me');

@@ -17,7 +17,7 @@ class MidtransService
      */
     public function getServerKey(): string
     {
-        return Setting::get('midtrans_server_key', config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', 'SB-Mid-server-test-key')));
+        return Setting::get('midtrans_server_key', config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY', 'your-midtrans-server-key')));
     }
 
     /**
@@ -25,7 +25,7 @@ class MidtransService
      */
     public function getClientKey(): string
     {
-        return Setting::get('midtrans_client_key', config('services.midtrans.client_key', env('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-test-key')));
+        return Setting::get('midtrans_client_key', config('services.midtrans.client_key', env('MIDTRANS_CLIENT_KEY', 'your-midtrans-client-key')));
     }
 
     /**

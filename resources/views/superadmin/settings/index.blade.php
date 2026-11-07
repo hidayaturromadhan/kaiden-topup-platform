@@ -46,7 +46,7 @@
                     <label for="midtrans_client_key" class="block font-semibold text-[#212121]">
                         Client Key (Publik)
                     </label>
-                    <input type="text" name="midtrans_client_key" id="midtrans_client_key" value="{{ $settings['midtrans_client_key'] }}" placeholder="SB-Mid-client-..." class="w-full px-3 py-2 rounded-xl border border-[#212121]/15 font-mono text-xs">
+                    <input type="text" name="midtrans_client_key" id="midtrans_client_key" value="{{ $settings['midtrans_client_key'] }}" placeholder="your-midtrans-client-key" class="w-full px-3 py-2 rounded-xl border border-[#212121]/15 font-mono text-xs">
                 </div>
 
                 <div class="sm:col-span-2 space-y-1.5">
