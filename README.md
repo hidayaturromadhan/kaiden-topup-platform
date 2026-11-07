@@ -7,12 +7,12 @@
 <h1 align="center">KAIDEN — Sistem Top Up Game Online & Produk Digital</h1>
 
 <p align="center">
-  Platform top-up game online dan produk digital berbasis <strong>Laravel 11</strong>, <strong>Tailwind CSS</strong>, dan <strong>Vite</strong> dengan arsitektur <em>Enterprise-Grade</em>. Dilengkapi sistem <strong>Role-Based Access Control (RBAC)</strong> yang ketat, pembayaran otomatis via <strong>Midtrans Snap</strong>, pemenuhan pesanan kilat via <strong>API Digiflazz</strong>, proteksi anti-rugi modal dinamis, serta pelacakan audit trail yang tidak dapat diubah (<em>immutable</em>).
+  Platform top-up game online dan produk digital berbasis <strong>Laravel 12</strong>, <strong>Tailwind CSS</strong>, dan <strong>Vite</strong> dengan arsitektur <em>Enterprise-Grade</em>. Dilengkapi sistem <strong>Role-Based Access Control (RBAC)</strong> yang ketat, pembayaran otomatis via <strong>Midtrans Snap</strong>, pemenuhan pesanan kilat via <strong>API Digiflazz</strong>, proteksi anti-rugi modal dinamis, serta pelacakan audit trail yang tidak dapat diubah (<em>immutable</em>).
 </p>
 
 <p align="center">
   <a href="https://github.com/hidayaturromadhan/kaiden-topup-platform/actions"><img src="https://github.com/hidayaturromadhan/kaiden-topup-platform/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline Status"></a>
-  <img src="https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 11">
+  <img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 12">
   <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2">
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/Payment-Midtrans_Snap-002B49?style=for-the-badge" alt="Midtrans">
