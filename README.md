@@ -11,6 +11,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/hidayaturromadhan/kaiden-topup-platform/actions"><img src="https://github.com/hidayaturromadhan/kaiden-topup-platform/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline Status"></a>
   <img src="https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 11">
   <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2">
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
