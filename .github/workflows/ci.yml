@@ -28,6 +28,13 @@ jobs:
           node-version: 20
           cache: 'npm'
 
+      - name: Prepare Environment & Directories
+        run: |
+          cp .env.example .env
+          mkdir -p database storage/framework/{sessions,views,cache} bootstrap/cache
+          touch database/database.sqlite
+          chmod -R 777 storage bootstrap/cache
+
       - name: Cache Composer Dependencies
         uses: actions/cache@v4
         with:
@@ -37,17 +44,15 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install Composer Dependencies
-        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Generate Application Key
+        run: php artisan key:generate
 
       - name: Install NPM Dependencies & Build Frontend Assets
         run: |
           npm ci
           npm run build
-
-      - name: Prepare Environment File
-        run: |
-          cp .env.example .env
-          php artisan key:generate
 
       - name: Run Automated Test Suite (39 Tests)
         env:
@@ -58,5 +63,4 @@ jobs:
           MIDTRANS_CLIENT_KEY: dummy-midtrans-client-key
           DIGIFLAZZ_API_KEY: dev-digiflazz-key
           DIGIFLAZZ_USERNAME: kaiden_dev
-        run: php artisan test
-
+        run: php artisan test --verbose
