@@ -71,4 +71,28 @@ class CatalogTest extends TestCase
         $response->assertSee('Mobile Legends');
         $response->assertSee('Free Fire');
     }
+
+    public function test_homepage_and_catalog_render_real_sales_and_feedback_without_fake_data()
+    {
+        $homeResponse = $this->get(route('home'));
+        $homeResponse->assertStatus(200);
+
+        // Pastikan TIDAK ADA data fake hardcode yang dulu muncul
+        $homeResponse->assertDontSee('4.8k terjual');
+        $homeResponse->assertDontSee('3.5k terjual');
+        $homeResponse->assertDontSee('2.1k terjual');
+        $homeResponse->assertDontSee('1.2k terjual');
+        $homeResponse->assertDontSee('840 terjual');
+        $homeResponse->assertDontSee('10500.00');
+        $homeResponse->assertDontSee('2648.00');
+
+        // Pastikan format harga menggunakan standar Rupiah
+        $homeResponse->assertSee('Rp');
+
+        // Pastikan di katalog juga tidak ada data penjualan fake
+        $catalogResponse = $this->get(route('catalog.index'));
+        $catalogResponse->assertStatus(200);
+        $catalogResponse->assertDontSee('4.8k terjual');
+        $catalogResponse->assertDontSee('3.5k terjual');
+    }
 }

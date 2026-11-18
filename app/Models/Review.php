@@ -66,12 +66,16 @@ class Review extends Model
     {
         static::saved(function (Review $review) {
             \Illuminate\Support\Facades\Cache::forget("game_rating_{$review->game_id}");
+            \Illuminate\Support\Facades\Cache::forget("game_reviews_count_{$review->game_id}");
             \Illuminate\Support\Facades\Cache::forget('home_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
         });
 
         static::deleted(function (Review $review) {
             \Illuminate\Support\Facades\Cache::forget("game_rating_{$review->game_id}");
+            \Illuminate\Support\Facades\Cache::forget("game_reviews_count_{$review->game_id}");
             \Illuminate\Support\Facades\Cache::forget('home_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
         });
     }
 }

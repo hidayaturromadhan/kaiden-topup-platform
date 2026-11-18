@@ -46,6 +46,11 @@ class CheckPermission
         }
 
         if (!$hasAny) {
+            // Pengaman master lockout: Superadmin hanya dibypass khusus pada menu tata kelola peran agar dapat selalu memulihkan hak akses
+            if ($user->isSuperadmin() && in_array('role.kelola', $permissions)) {
+                return $next($request);
+            }
+
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Akses ditolak. Anda tidak memiliki izin untuk tindakan ini.'], 403);
             }

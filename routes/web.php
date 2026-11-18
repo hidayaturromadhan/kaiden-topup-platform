@@ -174,6 +174,10 @@ Route::prefix('superadmin')->as('superadmin.')->middleware('auth')->group(functi
         ->middleware('permission:role.kelola')
         ->name('roles.update');
 
+    Route::post('/roles/{role}/toggle-permission', [SuperadminRoleController::class, 'togglePermission'])
+        ->middleware('permission:role.kelola')
+        ->name('roles.toggle_permission');
+
     // Pengaturan Integrasi & Feature Flag IGN
     Route::get('/settings', [SuperadminSettingController::class, 'index'])
         ->middleware('permission:integrasi.atur,ign.konfigurasi')

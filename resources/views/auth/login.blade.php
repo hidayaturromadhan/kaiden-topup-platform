@@ -31,16 +31,41 @@
                 <div class="flex items-center justify-between">
                     <label for="password" class="block text-xs font-semibold text-[#212121] dark:text-zinc-200">Kata Sandi</label>
                 </div>
-                <input type="password" name="password" id="password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/30 dark:placeholder:text-zinc-500">
+                <div class="relative">
+                    <input type="password" 
+                           name="password" 
+                           id="password" 
+                           required 
+                           placeholder="••••••••" 
+                           class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/30 dark:placeholder:text-zinc-500">
+                    <button type="button" 
+                            id="togglePasswordBtn"
+                            onclick="togglePasswordVisibility('password', 'eyeIcon', 'eyeOffIcon', this)" 
+                            aria-label="Lihat kata sandi" 
+                            title="Lihat kata sandi"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#212121]/40 dark:text-zinc-400 hover:text-[#6D0808] dark:hover:text-rose-400 focus:outline-none transition-colors cursor-pointer">
+                        <span id="eyeIcon">
+                            <x-icon name="eye" class="w-4 h-4" />
+                        </span>
+                        <span id="eyeOffIcon" class="hidden">
+                            <x-icon name="eye-off" class="w-4 h-4" />
+                        </span>
+                    </button>
+                </div>
                 @error('password')
                     <p class="text-[11px] text-red-600 dark:text-rose-400 font-medium">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="flex items-center justify-between pt-1">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" name="remember" class="rounded border-[#212121]/20 dark:border-white/20 text-[#6D0808] focus:ring-[#6D0808]">
-                    <span class="text-xs text-[#212121]/70 dark:text-zinc-400">Ingat sesi saya</span>
+                <label for="remember" class="flex items-center space-x-2.5 cursor-pointer select-none group">
+                    <input type="checkbox" 
+                           name="remember" 
+                           id="remember" 
+                           value="1" 
+                           {{ old('remember') ? 'checked' : '' }}
+                           class="w-4 h-4 rounded border-[#212121]/20 dark:border-white/20 text-[#6D0808] dark:text-rose-600 focus:ring-2 focus:ring-[#6D0808]/30 dark:focus:ring-rose-500/30 dark:bg-zinc-800 transition cursor-pointer">
+                    <span class="text-xs text-[#212121]/70 dark:text-zinc-400 group-hover:text-[#212121] dark:group-hover:text-zinc-200 transition">Ingat sesi saya</span>
                 </label>
             </div>
 
@@ -48,26 +73,6 @@
                 Masuk Sekarang
             </button>
         </form>
-
-        <!-- Akun Demo Cepat untuk Pengujian Skripsi / Verifikasi RBAC -->
-        <div class="p-3.5 rounded-xl bg-[#F9F8F6] dark:bg-zinc-800/60 border border-[#212121]/10 dark:border-white/10 space-y-2">
-            <div class="text-[11px] font-bold uppercase tracking-wider text-[#212121]/70 dark:text-zinc-400">Akun Pengujian RBAC:</div>
-            <div class="space-y-1 text-xs">
-                <button type="button" onclick="fillCreds('superadmin@kaiden.id', 'Password123!')" class="w-full text-left px-2 py-1 rounded bg-white dark:bg-zinc-800 border border-[#212121]/10 dark:border-white/10 hover:border-[#6D0808] dark:hover:border-rose-500 flex items-center justify-between transition">
-                    <span class="font-mono text-[11px] text-[#212121] dark:text-zinc-200">superadmin@kaiden.id</span>
-                    <span class="text-[10px] font-semibold text-[#6D0808] dark:text-rose-400">Superadmin</span>
-                </button>
-                <button type="button" onclick="fillCreds('admin@kaiden.id', 'Password123!')" class="w-full text-left px-2 py-1 rounded bg-white dark:bg-zinc-800 border border-[#212121]/10 dark:border-white/10 hover:border-[#6D0808] dark:hover:border-rose-500 flex items-center justify-between transition">
-                    <span class="font-mono text-[11px] text-[#212121] dark:text-zinc-200">admin@kaiden.id</span>
-                    <span class="text-[10px] font-semibold text-[#212121] dark:text-zinc-300">Admin</span>
-                </button>
-                <button type="button" onclick="fillCreds('pelanggan@kaiden.id', 'Password123!')" class="w-full text-left px-2 py-1 rounded bg-white dark:bg-zinc-800 border border-[#212121]/10 dark:border-white/10 hover:border-[#6D0808] dark:hover:border-rose-500 flex items-center justify-between transition">
-                    <span class="font-mono text-[11px] text-[#212121] dark:text-zinc-200">pelanggan@kaiden.id</span>
-                    <span class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Pelanggan</span>
-                </button>
-            </div>
-            <div class="text-[10px] text-[#212121]/50 dark:text-zinc-500 text-center">Kata sandi default: <span class="font-mono font-bold text-[#212121] dark:text-zinc-300">Password123!</span></div>
-        </div>
 
         <!-- Footer Form -->
         <div class="text-center pt-2 border-t border-[#212121]/10 dark:border-white/10 text-xs text-[#212121]/70 dark:text-zinc-400">
@@ -78,9 +83,30 @@
 </div>
 
 <script>
-function fillCreds(email, password) {
-    document.getElementById('email').value = email;
-    document.getElementById('password').value = password;
+function togglePasswordVisibility(inputId, eyeIconId, eyeOffIconId, btn) {
+    const input = document.getElementById(inputId);
+    const eyeIcon = document.getElementById(eyeIconId);
+    const eyeOffIcon = document.getElementById(eyeOffIconId);
+
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (eyeIcon) eyeIcon.classList.add('hidden');
+        if (eyeOffIcon) eyeOffIcon.classList.remove('hidden');
+        if (btn) {
+            btn.setAttribute('aria-label', 'Sembunyikan kata sandi');
+            btn.setAttribute('title', 'Sembunyikan kata sandi');
+        }
+    } else {
+        input.type = 'password';
+        if (eyeIcon) eyeIcon.classList.remove('hidden');
+        if (eyeOffIcon) eyeOffIcon.classList.add('hidden');
+        if (btn) {
+            btn.setAttribute('aria-label', 'Lihat kata sandi');
+            btn.setAttribute('title', 'Lihat kata sandi');
+        }
+    }
 }
 </script>
 @endsection

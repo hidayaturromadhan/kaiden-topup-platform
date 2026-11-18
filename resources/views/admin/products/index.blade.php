@@ -37,66 +37,6 @@
         </div>
     @endif
 
-    <!-- 1. Ringkasan Metrik & Status Proteksi Anti-Rugi -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <!-- Total Produk -->
-        <div class="p-4 rounded-2xl bg-white border border-[#212121]/10 shadow-xs flex items-center justify-between">
-            <div class="space-y-1">
-                <span class="text-[11px] font-semibold text-[#212121]/60 uppercase tracking-wider">Total Produk</span>
-                <div class="font-mono text-xl sm:text-2xl font-bold text-[#212121]">
-                    {{ number_format($stats['total'] ?? 0) }}
-                </div>
-                <span class="text-[10px] text-[#212121]/50">Terdaftar di database</span>
-            </div>
-            <div class="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-[#212121]/70">
-                <x-icon name="database" class="w-5 h-5" />
-            </div>
-        </div>
-
-        <!-- Produk Aktif -->
-        <div class="p-4 rounded-2xl bg-white border border-[#212121]/10 shadow-xs flex items-center justify-between">
-            <div class="space-y-1">
-                <span class="text-[11px] font-semibold text-emerald-800/80 uppercase tracking-wider">Produk Aktif</span>
-                <div class="font-mono text-xl sm:text-2xl font-bold text-emerald-700">
-                    {{ number_format($stats['active'] ?? 0) }}
-                </div>
-                <span class="text-[10px] text-emerald-600/70">Siap dibeli pelanggan</span>
-            </div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                <x-icon name="check-circle" class="w-5 h-5" />
-            </div>
-        </div>
-
-        <!-- Promo Diskon Aktif -->
-        <div class="p-4 rounded-2xl bg-white border border-[#212121]/10 shadow-xs flex items-center justify-between">
-            <div class="space-y-1">
-                <span class="text-[11px] font-semibold text-[#6D0808]/80 uppercase tracking-wider">Promo Diskon</span>
-                <div class="font-mono text-xl sm:text-2xl font-bold text-[#6D0808]">
-                    {{ number_format($stats['discounted'] ?? 0) }}
-                </div>
-                <span class="text-[10px] text-[#6D0808]/70">Harga promo aktif</span>
-            </div>
-            <div class="w-10 h-10 rounded-xl bg-[#6D0808]/10 flex items-center justify-center text-[#6D0808]">
-                <x-icon name="tag" class="w-5 h-5" />
-            </div>
-        </div>
-
-        <!-- Anti-Loss Guard Protection -->
-        <div class="p-4 rounded-2xl bg-white border border-emerald-300 shadow-xs flex items-center justify-between bg-gradient-to-br from-emerald-50/50 to-white">
-            <div class="space-y-1">
-                <span class="text-[11px] font-semibold text-emerald-900 uppercase tracking-wider">Proteksi Anti-Rugi</span>
-                <div class="flex items-center space-x-1.5 text-emerald-700 font-bold text-base sm:text-lg">
-                    <x-icon name="shield-check" class="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span>Aktif 100%</span>
-                </div>
-                <span class="text-[10px] text-emerald-800/80">Modal Digiflazz Terkunci</span>
-            </div>
-            <div class="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-700">
-                <x-icon name="lock" class="w-5 h-5" />
-            </div>
-        </div>
-    </div>
-
     <!-- Banner Edukasi Mekanisme Proteksi & Diskon Anti-Boncos -->
     <div class="p-4 rounded-2xl bg-white border border-[#212121]/10 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
         <div class="flex items-start sm:items-center space-x-3">

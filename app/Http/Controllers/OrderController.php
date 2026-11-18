@@ -12,6 +12,7 @@ use App\Services\MidtransService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -31,8 +32,14 @@ class OrderController extends Controller
      */
     public function showGame(string $slug)
     {
-        $game = Game::where('slug', $slug)->where('status', 'aktif')->firstOrFail();
-        $products = $game->activeProducts()->orderBy('sell_price')->get();
+        $game = Cache::remember("order_game_{$slug}", 600, function () use ($slug) {
+            return Game::where('slug', $slug)->where('status', 'aktif')->firstOrFail();
+        });
+
+        $products = Cache::remember("order_game_products_{$slug}", 600, function () use ($game) {
+            return $game->activeProducts()->orderBy('sell_price')->get();
+        });
+
         $currentBalance = $this->digiflazzService->getCurrentBalance();
 
         // Tandai ketersediaan tiap produk terhadap saldo modal operasional supplier

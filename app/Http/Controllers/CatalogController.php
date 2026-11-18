@@ -42,113 +42,163 @@ class CatalogController extends Controller
         });
 
         // 1. Query untuk Katalog Berdasarkan Game
-        $gamesQuery = Game::where('status', 'aktif')
-            ->withCount('activeProducts')
-            ->with(['activeProducts' => function ($q) {
-                $q->select('id', 'game_id', 'name', 'sell_price', 'category', 'is_active');
-            }]);
+        $isDefaultGames = empty($search) && (empty($category) || $category === 'Semua') && (empty($publisher) || $publisher === 'Semua') && ($sort === 'populer' || empty($sort));
 
-        if ($search) {
-            $gamesQuery->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('publisher', 'LIKE', "%{$search}%")
-                  ->orWhere('description', 'LIKE', "%{$search}%")
-                  ->orWhereHas('activeProducts', function ($pq) use ($search) {
-                      $pq->where('name', 'LIKE', "%{$search}%");
-                  });
+        if ($isDefaultGames) {
+            $games = Cache::remember('catalog_default_games', 600, function () {
+                return Game::where('status', 'aktif')
+                    ->withCount('activeProducts')
+                    ->withCount(['orders' => function ($q) {
+                        $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+                    }])
+                    ->withCount(['reviews' => function ($q) {
+                        $q->where('is_visible', true);
+                    }])
+                    ->withAvg(['reviews' => function ($q) {
+                        $q->where('is_visible', true);
+                    }], 'rating')
+                    ->with(['activeProducts' => function ($q) {
+                        $q->select('id', 'game_id', 'name', 'cost_price', 'original_price', 'sell_price', 'category', 'is_active')
+                          ->where('is_active', true)
+                          ->orderBy('sell_price', 'asc');
+                    }])
+                    ->orderBy('id', 'asc')
+                    ->get();
             });
-        }
+        } else {
+            $gamesQuery = Game::where('status', 'aktif')
+                ->withCount('activeProducts')
+                ->withCount(['orders' => function ($q) {
+                    $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+                }])
+                ->withCount(['reviews' => function ($q) {
+                    $q->where('is_visible', true);
+                }])
+                ->withAvg(['reviews' => function ($q) {
+                    $q->where('is_visible', true);
+                }], 'rating')
+                ->with(['activeProducts' => function ($q) {
+                    $q->select('id', 'game_id', 'name', 'cost_price', 'original_price', 'sell_price', 'category', 'is_active')
+                      ->where('is_active', true)
+                      ->orderBy('sell_price', 'asc');
+                }]);
 
-        if ($category && $category !== 'Semua') {
-            $gamesQuery->where('category', $category);
-        }
+            if ($search) {
+                $gamesQuery->where(function ($q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%")
+                      ->orWhere('publisher', 'LIKE', "%{$search}%")
+                      ->orWhere('description', 'LIKE', "%{$search}%")
+                      ->orWhereHas('activeProducts', function ($pq) use ($search) {
+                          $pq->where('name', 'LIKE', "%{$search}%");
+                      });
+                });
+            }
 
-        if ($publisher && $publisher !== 'Semua') {
-            $gamesQuery->where('publisher', $publisher);
-        }
+            if ($category && $category !== 'Semua') {
+                $gamesQuery->where('category', $category);
+            }
 
-        // Sorting Game
-        switch ($sort) {
-            case 'nama_asc':
-                $gamesQuery->orderBy('name', 'asc');
-                break;
-            case 'nama_desc':
-                $gamesQuery->orderBy('name', 'desc');
-                break;
-            case 'harga_asc':
-                // Diurutkan berdasarkan harga produk terendah di memori/collection setelah query
-                break;
-            case 'harga_desc':
-                break;
-            default: // populer
-                $gamesQuery->orderBy('id', 'asc');
-                break;
-        }
+            if ($publisher && $publisher !== 'Semua') {
+                $gamesQuery->where('publisher', $publisher);
+            }
 
-        $games = $gamesQuery->get();
+            // Sorting Game
+            switch ($sort) {
+                case 'nama_asc':
+                    $gamesQuery->orderBy('name', 'asc');
+                    break;
+                case 'nama_desc':
+                    $gamesQuery->orderBy('name', 'desc');
+                    break;
+                case 'harga_asc':
+                    break;
+                case 'harga_desc':
+                    break;
+                default: // populer
+                    $gamesQuery->orderBy('id', 'asc');
+                    break;
+            }
 
-        if ($sort === 'harga_asc') {
-            $games = $games->sortBy(function ($game) {
-                return $game->activeProducts->min('sell_price') ?? PHP_INT_MAX;
-            })->values();
-        } elseif ($sort === 'harga_desc') {
-            $games = $games->sortByDesc(function ($game) {
-                return $game->activeProducts->min('sell_price') ?? 0;
-            })->values();
+            $games = $gamesQuery->get();
+
+            if ($sort === 'harga_asc') {
+                $games = $games->sortBy(function ($game) {
+                    return $game->activeProducts->min('sell_price') ?? PHP_INT_MAX;
+                })->values();
+            } elseif ($sort === 'harga_desc') {
+                $games = $games->sortByDesc(function ($game) {
+                    return $game->activeProducts->min('sell_price') ?? 0;
+                })->values();
+            }
         }
 
         // 2. Query untuk Katalog Berdasarkan Item / Denominasi Produk Individu
-        $productsQuery = Product::where('is_active', true)
-            ->with(['game' => function ($q) {
-                $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail');
-            }])
-            ->whereHas('game', function ($gq) use ($category, $publisher) {
-                $gq->where('status', 'aktif');
-                if ($category && $category !== 'Semua') {
-                    $gq->where('category', $category);
-                }
-                if ($publisher && $publisher !== 'Semua') {
-                    $gq->where('publisher', $publisher);
-                }
-            });
+        $isDefaultProducts = empty($search) && (empty($category) || $category === 'Semua') && (empty($publisher) || $publisher === 'Semua') && ($sort === 'populer' || $sort === 'harga_asc' || empty($sort));
 
-        if ($search) {
-            $productsQuery->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('digiflazz_sku', 'LIKE', "%{$search}%")
-                  ->orWhereHas('game', function ($gq) use ($search) {
-                      $gq->where('name', 'LIKE', "%{$search}%")
-                         ->orWhere('publisher', 'LIKE', "%{$search}%");
-                  });
+        if ($isDefaultProducts) {
+            $products = Cache::remember('catalog_default_products', 600, function () {
+                return Product::where('is_active', true)
+                    ->with(['game' => function ($q) {
+                        $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail');
+                    }])
+                    ->whereHas('game', fn($gq) => $gq->where('status', 'aktif'))
+                    ->orderBy('sell_price', 'asc')
+                    ->get();
             });
+        } else {
+            $productsQuery = Product::where('is_active', true)
+                ->with(['game' => function ($q) {
+                    $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail');
+                }])
+                ->whereHas('game', function ($gq) use ($category, $publisher) {
+                    $gq->where('status', 'aktif');
+                    if ($category && $category !== 'Semua') {
+                        $gq->where('category', $category);
+                    }
+                    if ($publisher && $publisher !== 'Semua') {
+                        $gq->where('publisher', $publisher);
+                    }
+                });
+
+            if ($search) {
+                $productsQuery->where(function ($q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%")
+                      ->orWhere('digiflazz_sku', 'LIKE', "%{$search}%")
+                      ->orWhereHas('game', function ($gq) use ($search) {
+                          $gq->where('name', 'LIKE', "%{$search}%")
+                             ->orWhere('publisher', 'LIKE', "%{$search}%");
+                      });
+                });
+            }
+
+            switch ($sort) {
+                case 'nama_asc':
+                    $productsQuery->orderBy('name', 'asc');
+                    break;
+                case 'nama_desc':
+                    $productsQuery->orderBy('name', 'desc');
+                    break;
+                case 'harga_asc':
+                    $productsQuery->orderBy('sell_price', 'asc');
+                    break;
+                case 'harga_desc':
+                    $productsQuery->orderBy('sell_price', 'desc');
+                    break;
+                default:
+                    $productsQuery->orderBy('sell_price', 'asc');
+                    break;
+            }
+
+            $products = $productsQuery->get();
         }
 
-        switch ($sort) {
-            case 'nama_asc':
-                $productsQuery->orderBy('name', 'asc');
-                break;
-            case 'nama_desc':
-                $productsQuery->orderBy('name', 'desc');
-                break;
-            case 'harga_asc':
-                $productsQuery->orderBy('sell_price', 'asc');
-                break;
-            case 'harga_desc':
-                $productsQuery->orderBy('sell_price', 'desc');
-                break;
-            default:
-                $productsQuery->orderBy('sell_price', 'asc');
-                break;
-        }
-
-        $products = $productsQuery->get();
         $currentBalance = $this->digiflazzService->getCurrentBalance();
         $products->each(function ($prod) use ($currentBalance) {
             $prod->is_stock_available = ($currentBalance >= $prod->cost_price);
         });
 
-        $totalGamesCount = Game::where('status', 'aktif')->count();
-        $totalProductsCount = Product::where('is_active', true)->whereHas('game', fn($q) => $q->where('status', 'aktif'))->count();
+        $totalGamesCount = Cache::remember('active_games_total_count', 3600, fn() => Game::where('status', 'aktif')->count());
+        $totalProductsCount = Cache::remember('active_products_total_count', 3600, fn() => Product::where('is_active', true)->whereHas('game', fn($q) => $q->where('status', 'aktif'))->count());
 
         // Respon AJAX dinamis untuk filter tanpa reload halaman dengan skeleton web render
         if ($request->ajax() || $request->wantsJson() || $request->has('ajax')) {

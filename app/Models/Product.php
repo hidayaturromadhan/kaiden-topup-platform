@@ -123,12 +123,34 @@ class Product extends Model
 
     protected static function booted(): void
     {
-        static::saved(function () {
+        static::saved(function (Product $product) {
             \Illuminate\Support\Facades\Cache::forget('home_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_products');
+            \Illuminate\Support\Facades\Cache::forget('active_products_total_count');
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_metrics');
+            if ($product->game_id) {
+                $slug = $product->game?->slug;
+                if ($slug) {
+                    \Illuminate\Support\Facades\Cache::forget("order_game_{$slug}");
+                    \Illuminate\Support\Facades\Cache::forget("order_game_products_{$slug}");
+                }
+            }
         });
 
-        static::deleted(function () {
+        static::deleted(function (Product $product) {
             \Illuminate\Support\Facades\Cache::forget('home_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_products');
+            \Illuminate\Support\Facades\Cache::forget('active_products_total_count');
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_metrics');
+            if ($product->game_id) {
+                $slug = $product->game?->slug;
+                if ($slug) {
+                    \Illuminate\Support\Facades\Cache::forget("order_game_{$slug}");
+                    \Illuminate\Support\Facades\Cache::forget("order_game_products_{$slug}");
+                }
+            }
         });
     }
 }

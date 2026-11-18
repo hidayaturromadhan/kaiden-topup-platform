@@ -34,7 +34,9 @@
                             default => 'images/bg/1.jpg',
                         };
 
-                        $minPrice = $game->activeProducts->min('sell_price') ?? 10000;
+                        $lowestProduct = $game->lowest_product ?? $game->activeProducts->first();
+                        $minPrice = $lowestProduct?->sell_price ?? ($game->activeProducts->min('sell_price') ?? 0);
+                        $maxDiscount = $game->max_discount_percent;
                         
                         $pubTheme = match($game->slug) {
                             'mobile-legends' => ['bg' => 'bg-[#1064D3]', 'label' => 'Moonton', 'sub' => 'Southeast-Asia • Top Up'],
@@ -43,23 +45,6 @@
                             'call-of-duty-mobile' => ['bg' => 'bg-[#1E293B]', 'label' => 'Activision', 'sub' => 'Southeast-Asia • CP'],
                             'arena-of-valor' => ['bg' => 'bg-[#D97706]', 'label' => 'Garena', 'sub' => 'Indonesia • Voucher'],
                             default => ['bg' => 'bg-[#1064D3]', 'label' => $game->publisher ?? 'Official', 'sub' => 'Indonesia • Top Up'],
-                        };
-
-                        $salesCount = match($game->slug) {
-                            'mobile-legends' => '4.8k',
-                            'free-fire' => '3.5k',
-                            'valorant' => '2.1k',
-                            'call-of-duty-mobile' => '1.2k',
-                            'arena-of-valor' => '840',
-                            default => '500',
-                        };
-                        $rating = match($game->slug) {
-                            'mobile-legends' => '4.98',
-                            'free-fire' => '4.96',
-                            'valorant' => '4.97',
-                            'call-of-duty-mobile' => '4.94',
-                            'arena-of-valor' => '4.92',
-                            default => '4.95',
                         };
                     @endphp
 
@@ -99,23 +84,33 @@
                             <div class="space-y-1 pt-1 border-t border-stone-100 dark:border-white/10">
                                 <div class="flex items-center justify-between text-[10px] text-[#212121]/60 dark:text-zinc-400">
                                     <span>Mulai dari:</span>
-                                    <span class="px-1.5 py-0.2 rounded bg-[#6D0808]/10 dark:bg-rose-950/40 text-[#6D0808] dark:text-rose-400 font-bold text-[9px]">
-                                        {{ $game->active_products_count }} Paket
-                                    </span>
+                                    <div class="flex items-center space-x-1">
+                                        @if($maxDiscount > 0)
+                                            <span class="px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-950/40 text-[#6D0808] dark:text-rose-400 font-bold text-[9px] border border-rose-200 dark:border-rose-900">
+                                                -{{ $maxDiscount }}%
+                                            </span>
+                                        @endif
+                                        <span class="px-1.5 py-0.2 rounded bg-[#6D0808]/10 dark:bg-rose-950/40 text-[#6D0808] dark:text-rose-400 font-bold text-[9px]">
+                                            {{ $game->active_products_count }} Paket
+                                        </span>
+                                    </div>
                                 </div>
                                 <div class="text-[#D97706] dark:text-amber-400 font-mono font-black text-xs sm:text-[15px] tracking-tight leading-tight">
                                     Rp {{ number_format($minPrice, 0, ',', '.') }}
                                 </div>
                             </div>
 
-                            <!-- Footer: Sales & Star Rating -->
+                            <!-- Footer: Sales & Star Rating / Feedback Riil -->
                             <div class="pt-1.5 border-t border-stone-100 dark:border-white/10 flex items-center justify-between text-[10px]">
                                 <span class="text-[#212121]/50 dark:text-zinc-400 font-medium">
-                                    {{ $salesCount }} terjual
+                                    {{ $game->sales_count_formatted }} terjual
                                 </span>
-                                <div class="flex items-center space-x-0.5 text-[#212121]/80 dark:text-zinc-300 font-bold">
+                                <div class="flex items-center space-x-0.5 text-[#212121]/80 dark:text-zinc-300 font-bold" title="{{ $game->reviews_count > 0 ? $game->reviews_count . ' ulasan pelanggan' : 'Belum ada ulasan' }}">
                                     <x-icon name="star" class="w-3 h-3 text-amber-400" fill="currentColor" />
-                                    <span class="font-mono text-[10px]">{{ $rating }}</span>
+                                    <span class="font-mono text-[10px]">{{ number_format($game->average_rating, 1) }}</span>
+                                    @if($game->reviews_count > 0)
+                                        <span class="font-sans font-normal text-[9px] text-[#212121]/50 dark:text-zinc-400">({{ $game->reviews_count }})</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>

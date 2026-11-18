@@ -28,8 +28,19 @@ class HomeController extends Controller
             $games = Cache::remember('home_default_games', 600, function () {
                 return Game::where('status', 'aktif')
                     ->withCount('activeProducts')
+                    ->withCount(['orders' => function ($q) {
+                        $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+                    }])
+                    ->withCount(['reviews' => function ($q) {
+                        $q->where('is_visible', true);
+                    }])
+                    ->withAvg(['reviews' => function ($q) {
+                        $q->where('is_visible', true);
+                    }], 'rating')
                     ->with(['activeProducts' => function ($q) {
-                        $q->select('id', 'game_id', 'sell_price');
+                        $q->select('id', 'game_id', 'name', 'cost_price', 'original_price', 'sell_price', 'is_active')
+                          ->where('is_active', true)
+                          ->orderBy('sell_price', 'asc');
                     }])
                     ->orderBy('name', 'asc')
                     ->get();
@@ -37,8 +48,19 @@ class HomeController extends Controller
         } else {
             $gamesQuery = Game::where('status', 'aktif')
                 ->withCount('activeProducts')
+                ->withCount(['orders' => function ($q) {
+                    $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+                }])
+                ->withCount(['reviews' => function ($q) {
+                    $q->where('is_visible', true);
+                }])
+                ->withAvg(['reviews' => function ($q) {
+                    $q->where('is_visible', true);
+                }], 'rating')
                 ->with(['activeProducts' => function ($q) {
-                    $q->select('id', 'game_id', 'sell_price');
+                    $q->select('id', 'game_id', 'name', 'cost_price', 'original_price', 'sell_price', 'is_active')
+                      ->where('is_active', true)
+                      ->orderBy('sell_price', 'asc');
                 }]);
 
             if ($search) {

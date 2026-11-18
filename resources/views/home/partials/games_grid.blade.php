@@ -17,34 +17,9 @@
                 default => 'images/bg/1.jpg',
             };
 
-            $minPrice = $game->activeProducts->min('sell_price') ?? 10000;
-            
-            $discountPercent = match($game->slug) {
-                'mobile-legends' => 11,
-                'free-fire' => 15,
-                'valorant' => 10,
-                'call-of-duty-mobile' => 12,
-                'arena-of-valor' => 10,
-                default => 10,
-            };
-            $strikethroughPrice = (int) ceil(($minPrice / (1 - ($discountPercent / 100))) / 100) * 100;
-
-            $salesCount = match($game->slug) {
-                'mobile-legends' => '4.8k',
-                'free-fire' => '3.5k',
-                'valorant' => '2.1k',
-                'call-of-duty-mobile' => '1.2k',
-                'arena-of-valor' => '840',
-                default => '500',
-            };
-            $rating = match($game->slug) {
-                'mobile-legends' => '4.98',
-                'free-fire' => '4.96',
-                'valorant' => '4.97',
-                'call-of-duty-mobile' => '4.94',
-                'arena-of-valor' => '4.92',
-                default => '4.95',
-            };
+            $lowestProduct = $game->lowest_product ?? $game->activeProducts->first();
+            $minPrice = $lowestProduct?->sell_price ?? ($game->activeProducts->min('sell_price') ?? 0);
+            $maxDiscount = $game->max_discount_percent;
 
             $pubTheme = match($game->slug) {
                 'mobile-legends' => ['bg' => 'bg-[#1064D3]', 'label' => 'Moonton', 'sub' => 'Southeast-Asia • Top Up'],
@@ -88,30 +63,45 @@
                     </p>
                 </div>
 
-                <!-- 4. HARGA & DISKON -->
-                <div class="space-y-0.5 pt-0.5">
-                    <div class="flex items-center space-x-1.5 text-[10px]">
-                        <span class="px-1 py-0.2 rounded bg-red-600 text-white font-bold text-[9px] leading-tight">
-                            {{ $discountPercent }}%
-                        </span>
-                        <span class="text-[#212121]/40 dark:text-zinc-500 line-through font-mono text-[10px] sm:text-[11px]">
-                            {{ number_format($strikethroughPrice, 0, '', '') }}.00
-                        </span>
-                    </div>
+                <!-- 4. HARGA & DISKON RIIL -->
+                <div class="space-y-0.5 pt-0.5 min-h-[2.4rem] flex flex-col justify-end">
+                    @if($lowestProduct && $lowestProduct->has_discount)
+                        <div class="flex items-center space-x-1.5 text-[10px]">
+                            <span class="px-1 py-0.2 rounded bg-red-600 text-white font-bold text-[9px] leading-tight">
+                                -{{ $lowestProduct->discount_percent }}%
+                            </span>
+                            <span class="text-[#212121]/40 dark:text-zinc-500 line-through font-mono text-[10px] sm:text-[11px]">
+                                Rp {{ number_format($lowestProduct->original_price, 0, ',', '.') }}
+                            </span>
+                        </div>
+                    @elseif($maxDiscount > 0)
+                        <div class="flex items-center space-x-1.5 text-[10px]">
+                            <span class="px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-950/40 text-[#6D0808] dark:text-rose-400 border border-rose-200 dark:border-rose-900 font-bold text-[9px] leading-tight">
+                                Diskon s/d {{ $maxDiscount }}%
+                            </span>
+                        </div>
+                    @else
+                        <div class="text-[10px] text-[#212121]/50 dark:text-zinc-400 font-medium">
+                            Mulai dari
+                        </div>
+                    @endif
 
                     <div class="text-[#D97706] dark:text-amber-400 font-mono font-black text-xs sm:text-[15px] tracking-tight leading-tight">
-                        {{ number_format($minPrice, 0, '', '') }}.00
+                        Rp {{ number_format($minPrice, 0, ',', '.') }}
                     </div>
                 </div>
 
-                <!-- 5. FOOTER: Terjual & Rating Bintang -->
+                <!-- 5. FOOTER: Terjual & Rating/Feedback Riil -->
                 <div class="pt-1.5 border-t border-stone-100 dark:border-white/10 flex items-center justify-between text-[10px]">
                     <span class="text-[#212121]/50 dark:text-zinc-400 font-medium">
-                        {{ $salesCount }} terjual
+                        {{ $game->sales_count_formatted }} terjual
                     </span>
-                    <div class="flex items-center space-x-0.5 text-[#212121]/80 dark:text-zinc-300 font-bold">
+                    <div class="flex items-center space-x-0.5 text-[#212121]/80 dark:text-zinc-300 font-bold" title="{{ $game->reviews_count > 0 ? $game->reviews_count . ' ulasan pelanggan' : 'Belum ada ulasan' }}">
                         <x-icon name="star" class="w-3 h-3 text-amber-400" fill="currentColor" />
-                        <span class="font-mono text-[10px]">{{ $rating }}</span>
+                        <span class="font-mono text-[10px]">{{ number_format($game->average_rating, 1) }}</span>
+                        @if($game->reviews_count > 0)
+                            <span class="font-sans font-normal text-[9px] text-[#212121]/50 dark:text-zinc-400">({{ $game->reviews_count }})</span>
+                        @endif
                     </div>
                 </div>
 

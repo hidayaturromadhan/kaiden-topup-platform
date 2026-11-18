@@ -256,5 +256,69 @@ class RbacSecurityTest extends TestCase
         $this->assertEquals($oldPrice, $audit->old_values['sell_price']);
         $this->assertEquals($newPrice, $audit->new_values['sell_price']);
     }
+
+    /**
+     * UJI 9: Form Login Menampilkan Fitur Intai Password & Checkbox Ingat Sesi Saya
+     */
+    public function test_login_page_renders_password_peek_and_remember_checkbox(): void
+    {
+        $response = $this->get(route('login'));
+        $response->assertStatus(200);
+
+        // Verifikasi elemen intai kata sandi (toggle peek)
+        $response->assertSee('togglePasswordVisibility');
+        $response->assertSee('Lihat kata sandi');
+        $response->assertSee('eyeIcon');
+        $response->assertSee('eyeOffIcon');
+
+        // Verifikasi elemen checkbox ingat saya
+        $response->assertSee('name="remember"', false);
+        $response->assertSee('id="remember"', false);
+        $response->assertSee('Ingat sesi saya');
+    }
+
+    /**
+     * UJI 10: Autentikasi dengan 'Ingat Saya' (Remember Me) Menyimpan Remember Token
+     */
+    public function test_login_with_remember_me_stores_remember_token(): void
+    {
+        $user = User::where('email', 'superadmin@kaiden.id')->first();
+        $user->remember_token = null;
+        $user->save();
+
+        $response = $this->post(route('login.post'), [
+            'email' => 'superadmin@kaiden.id',
+            'password' => 'Password123!',
+            'remember' => '1',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($user);
+
+        $user->refresh();
+        $this->assertNotNull($user->remember_token);
+        $this->assertNotEmpty($user->remember_token);
+    }
+
+    /**
+     * UJI 11: Autentikasi tanpa 'Ingat Saya' Tidak Mengisi Remember Token
+     */
+    public function test_login_without_remember_me_does_not_store_remember_token(): void
+    {
+        $user = User::where('email', 'pelanggan@kaiden.id')->first();
+        $user->remember_token = null;
+        $user->save();
+
+        $response = $this->post(route('login.post'), [
+            'email' => 'pelanggan@kaiden.id',
+            'password' => 'Password123!',
+        ]);
+
+        $response->assertRedirect(route('home'));
+        $this->assertAuthenticatedAs($user);
+
+        $user->refresh();
+        $this->assertNull($user->remember_token);
+    }
 }
 

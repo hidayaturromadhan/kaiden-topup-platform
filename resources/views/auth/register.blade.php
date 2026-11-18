@@ -37,7 +37,26 @@
 
             <div class="space-y-1.5">
                 <label for="password" class="block text-xs font-semibold text-[#212121] dark:text-zinc-200">Kata Sandi</label>
-                <input type="password" name="password" id="password" required placeholder="Minimal 8 karakter" class="w-full px-3.5 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/30 dark:placeholder:text-zinc-500">
+                <div class="relative">
+                    <input type="password" 
+                           name="password" 
+                           id="password" 
+                           required 
+                           placeholder="Minimal 8 karakter" 
+                           class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/30 dark:placeholder:text-zinc-500">
+                    <button type="button" 
+                            onclick="togglePasswordVisibility('password', 'eyeIconPass', 'eyeOffIconPass', this)" 
+                            aria-label="Lihat kata sandi" 
+                            title="Lihat kata sandi"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#212121]/40 dark:text-zinc-400 hover:text-[#6D0808] dark:hover:text-rose-400 focus:outline-none transition-colors cursor-pointer">
+                        <span id="eyeIconPass">
+                            <x-icon name="eye" class="w-4 h-4" />
+                        </span>
+                        <span id="eyeOffIconPass" class="hidden">
+                            <x-icon name="eye-off" class="w-4 h-4" />
+                        </span>
+                    </button>
+                </div>
                 @error('password')
                     <p class="text-[11px] text-red-600 dark:text-rose-400 font-medium">{{ $message }}</p>
                 @enderror
@@ -45,7 +64,26 @@
 
             <div class="space-y-1.5">
                 <label for="password_confirmation" class="block text-xs font-semibold text-[#212121] dark:text-zinc-200">Konfirmasi Kata Sandi</label>
-                <input type="password" name="password_confirmation" id="password_confirmation" required placeholder="Ulangi kata sandi" class="w-full px-3.5 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/30 dark:placeholder:text-zinc-500">
+                <div class="relative">
+                    <input type="password" 
+                           name="password_confirmation" 
+                           id="password_confirmation" 
+                           required 
+                           placeholder="Ulangi kata sandi" 
+                           class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/30 dark:placeholder:text-zinc-500">
+                    <button type="button" 
+                            onclick="togglePasswordVisibility('password_confirmation', 'eyeIconConf', 'eyeOffIconConf', this)" 
+                            aria-label="Lihat konfirmasi kata sandi" 
+                            title="Lihat konfirmasi kata sandi"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#212121]/40 dark:text-zinc-400 hover:text-[#6D0808] dark:hover:text-rose-400 focus:outline-none transition-colors cursor-pointer">
+                        <span id="eyeIconConf">
+                            <x-icon name="eye" class="w-4 h-4" />
+                        </span>
+                        <span id="eyeOffIconConf" class="hidden">
+                            <x-icon name="eye-off" class="w-4 h-4" />
+                        </span>
+                    </button>
+                </div>
             </div>
 
             <div class="pt-2">
@@ -55,12 +93,6 @@
             </div>
         </form>
 
-        <!-- Informasi Keamanan Sesuai RULES.md -->
-        <div class="p-3 rounded-lg bg-[#F9F8F6] dark:bg-zinc-800/60 border border-[#212121]/10 dark:border-white/10 text-[11px] text-[#212121]/60 dark:text-zinc-400 leading-relaxed">
-            <span class="font-bold text-[#212121] dark:text-zinc-200">Catatan Keamanan RBAC:</span>
-            Pendaftaran publik hanya menetapkan peran <em>Pelanggan</em>. Akun staf internal (Admin & Superadmin) hanya dapat dibuat secara terotorisasi melalui Dashboard Superadmin.
-        </div>
-
         <!-- Footer -->
         <div class="text-center pt-2 border-t border-[#212121]/10 dark:border-white/10 text-xs text-[#212121]/70 dark:text-zinc-400">
             Sudah memiliki akun?
@@ -68,5 +100,33 @@
         </div>
     </div>
 </div>
+
+<script>
+function togglePasswordVisibility(inputId, eyeIconId, eyeOffIconId, btn) {
+    const input = document.getElementById(inputId);
+    const eyeIcon = document.getElementById(eyeIconId);
+    const eyeOffIcon = document.getElementById(eyeOffIconId);
+
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (eyeIcon) eyeIcon.classList.add('hidden');
+        if (eyeOffIcon) eyeOffIcon.classList.remove('hidden');
+        if (btn) {
+            btn.setAttribute('aria-label', 'Sembunyikan kata sandi');
+            btn.setAttribute('title', 'Sembunyikan kata sandi');
+        }
+    } else {
+        input.type = 'password';
+        if (eyeIcon) eyeIcon.classList.remove('hidden');
+        if (eyeOffIcon) eyeOffIcon.classList.add('hidden');
+        if (btn) {
+            btn.setAttribute('aria-label', 'Lihat kata sandi');
+            btn.setAttribute('title', 'Lihat kata sandi');
+        }
+    }
+}
+</script>
 @endsection
 

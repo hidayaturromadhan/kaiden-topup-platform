@@ -9,6 +9,7 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -42,7 +43,9 @@ class ReportController extends Controller
         ];
 
         $orders = $query->latest()->paginate(20)->withQueryString();
-        $games = Game::orderBy('name')->get();
+        $games = Cache::remember('admin_games_dropdown', 3600, function () {
+            return Game::orderBy('name')->get();
+        });
 
         return view('admin.reports.index', compact('orders', 'games', 'startDate', 'endDate', 'gameId', 'status', 'summary'));
     }

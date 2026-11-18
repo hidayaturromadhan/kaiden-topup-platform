@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Game extends Model
 {
@@ -41,6 +42,17 @@ class Game extends Model
         return $this->hasMany(Product::class)->where('is_active', true)->orderBy('sell_price', 'asc');
     }
 
+    public function orders(): HasManyThrough
+    {
+        return $this->hasManyThrough(Order::class, Product::class, 'game_id', 'product_id');
+    }
+
+    public function successfulOrders(): HasManyThrough
+    {
+        return $this->hasManyThrough(Order::class, Product::class, 'game_id', 'product_id')
+            ->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
@@ -52,34 +64,103 @@ class Game extends Model
     }
 
     /**
-     * Rating rata-rata dihitung dinamis dari ulasan pelanggan
+     * Total pesanan riil berhasil
      */
-    public function getAverageRatingAttribute(): float
+    public function getSalesCountAttribute(): int
     {
-        return \Illuminate\Support\Facades\Cache::remember("game_rating_{$this->id}", 3600, function () {
-            $avg = $this->reviews()->where('is_visible', true)->avg('rating');
-            return $avg ? round((float)$avg, 2) : 4.95;
+        if (isset($this->attributes['orders_count'])) {
+            return (int) $this->attributes['orders_count'];
+        }
+
+        return (int) \Illuminate\Support\Facades\Cache::remember("game_sales_count_{$this->id}", 300, function () {
+            return $this->successfulOrders()->count();
         });
     }
 
     /**
-     * Jumlah ulasan yang masuk
+     * Format tampilan terjual (misal: "4", "1.2k")
      */
+    public function getSalesCountFormattedAttribute(): string
+    {
+        $count = $this->sales_count;
+        if ($count >= 1000) {
+            return number_format($count / 1000, 1) . 'k';
+        }
+        return (string) $count;
+    }
+
+    /**
+     * Rating rata-rata dihitung dinamis dari ulasan pelanggan riil
+     */
+    public function getAverageRatingAttribute(): float
+    {
+        if (isset($this->attributes['reviews_avg_rating']) && $this->attributes['reviews_avg_rating'] !== null) {
+            return round((float) $this->attributes['reviews_avg_rating'], 1);
+        }
+
+        return (float) \Illuminate\Support\Facades\Cache::remember("game_rating_{$this->id}", 300, function () {
+            $avg = $this->reviews()->where('is_visible', true)->avg('rating');
+            return $avg ? round((float) $avg, 1) : 5.0;
+        });
+    }
+
+    /**
+     * Jumlah ulasan / feedback riil yang masuk
+     */
+    public function getReviewsCountAttribute(): int
+    {
+        if (isset($this->attributes['reviews_count'])) {
+            return (int) $this->attributes['reviews_count'];
+        }
+
+        return (int) \Illuminate\Support\Facades\Cache::remember("game_reviews_count_{$this->id}", 300, function () {
+            return $this->reviews()->where('is_visible', true)->count();
+        });
+    }
+
     public function getTotalReviewsCountAttribute(): int
     {
-        return $this->reviews()->where('is_visible', true)->count();
+        return $this->reviews_count;
+    }
+
+    /**
+     * Produk aktif dengan harga terendah
+     */
+    public function getLowestProductAttribute(): ?Product
+    {
+        return $this->activeProducts->sortBy('sell_price')->first();
+    }
+
+    /**
+     * Persentase diskon tertinggi aktif di antara produk game ini
+     */
+    public function getMaxDiscountPercentAttribute(): int
+    {
+        return (int) ($this->activeProducts->where('has_discount', true)->max('discount_percent') ?? 0);
     }
 
     protected static function booted(): void
     {
-        static::saved(function () {
+        static::saved(function (Game $game) {
             \Illuminate\Support\Facades\Cache::forget('home_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
             \Illuminate\Support\Facades\Cache::forget('active_game_categories');
+            \Illuminate\Support\Facades\Cache::forget('active_game_publishers');
+            \Illuminate\Support\Facades\Cache::forget('admin_games_dropdown');
+            \Illuminate\Support\Facades\Cache::forget('guide_active_games');
+            \Illuminate\Support\Facades\Cache::forget('active_games_total_count');
+            \Illuminate\Support\Facades\Cache::forget("order_game_{$game->slug}");
         });
 
-        static::deleted(function () {
+        static::deleted(function (Game $game) {
             \Illuminate\Support\Facades\Cache::forget('home_default_games');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
             \Illuminate\Support\Facades\Cache::forget('active_game_categories');
+            \Illuminate\Support\Facades\Cache::forget('active_game_publishers');
+            \Illuminate\Support\Facades\Cache::forget('admin_games_dropdown');
+            \Illuminate\Support\Facades\Cache::forget('guide_active_games');
+            \Illuminate\Support\Facades\Cache::forget('active_games_total_count');
+            \Illuminate\Support\Facades\Cache::forget("order_game_{$game->slug}");
         });
     }
 }

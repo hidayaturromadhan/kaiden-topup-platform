@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\DigiflazzService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -40,16 +41,11 @@ class ProductController extends Controller
         }
 
         $products = $query->orderBy('game_id')->orderBy('sell_price')->paginate(15)->withQueryString();
-        $games = Game::orderBy('name')->get();
+        $games = Cache::remember('admin_games_dropdown', 3600, function () {
+            return Game::orderBy('name')->get();
+        });
 
-        $stats = [
-            'total' => Product::count(),
-            'active' => Product::where('is_active', true)->count(),
-            'discounted' => Product::whereNotNull('original_price')->whereColumn('original_price', '>', 'sell_price')->count(),
-            'anti_loss_protected' => Product::count(),
-        ];
-
-        return view('admin.products.index', compact('products', 'games', 'gameId', 'status', 'search', 'stats'));
+        return view('admin.products.index', compact('products', 'games', 'gameId', 'status', 'search'));
     }
 
     /**

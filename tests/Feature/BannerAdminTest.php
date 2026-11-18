@@ -165,5 +165,26 @@ class BannerAdminTest extends TestCase
         $response->assertSee('Top Up Diamond &amp; Voucher Instan 24 Jam Nonstop', false);
         $response->assertSee('Flash Promo Mobile Legends');
     }
+
+    public function test_superadmin_cannot_access_banners_when_permission_is_revoked()
+    {
+        $superadmin = User::where('email', 'superadmin@kaiden.id')->first();
+        $superadminRole = $superadmin->roles->first();
+        $bannerPerm = \App\Models\Permission::where('name', 'banner.kelola')->first();
+
+        // 1. Cabut izin banner.kelola dari peran Superadmin
+        $superadminRole->permissions()->detach($bannerPerm->id);
+        $superadmin->load('roles.permissions');
+
+        $response = $this->actingAs($superadmin)->get(route('admin.banners.index'));
+        $response->assertStatus(403);
+
+        // 2. Berikan kembali izin banner.kelola ke peran Superadmin
+        $superadminRole->permissions()->attach($bannerPerm->id);
+        $superadmin->load('roles.permissions');
+
+        $allowedResponse = $this->actingAs($superadmin)->get(route('admin.banners.index'));
+        $allowedResponse->assertStatus(200);
+    }
 }
 

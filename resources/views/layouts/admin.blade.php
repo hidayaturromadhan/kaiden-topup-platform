@@ -22,9 +22,9 @@
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity" onclick="toggleAdminSidebar()"></div>
 
     <!-- Sidebar Gelap Sesuai RULES.md Section 1.C.2 -->
-    <aside id="admin-sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#212121] text-[#F9F8F6] flex-shrink-0 flex flex-col min-h-screen border-r border-[#212121]/20 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+    <aside id="admin-sidebar" class="fixed md:sticky top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-[#212121] text-[#F9F8F6] flex-shrink-0 flex flex-col border-r border-[#212121]/20 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out select-none">
         <!-- Brand Header -->
-        <div class="h-16 flex items-center justify-between px-6 border-b border-white/10">
+        <div class="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
             <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-2.5">
                 <img src="{{ asset('images/logo.png') }}" alt="KAIDEN" class="h-9 w-auto object-contain">
                 <span class="text-[10px] text-white/50 tracking-widest uppercase font-mono border-l border-white/15 pl-2.5">Panel</span>
@@ -124,7 +124,7 @@
         </div>
 
         <!-- Footer Profile Sidebar -->
-        <div class="p-4 border-t border-white/10 bg-black/20">
+        <div class="p-4 border-t border-white/10 bg-black/20 shrink-0">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 rounded-lg bg-[#6D0808] text-white flex items-center justify-center font-bold text-xs uppercase">
@@ -152,9 +152,9 @@
     </aside>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
         <!-- Topbar -->
-        <header class="h-16 bg-[#FFFFFF] border-b border-[#212121]/10 px-4 sm:px-6 flex items-center justify-between">
+        <header class="h-16 bg-[#FFFFFF] border-b border-[#212121]/10 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
             <div class="flex items-center space-x-3">
                 <button type="button" onclick="toggleAdminSidebar()" class="md:hidden p-2 rounded-lg text-[#212121]/70 hover:text-[#212121] hover:bg-[#212121]/5" title="Buka Menu Navigasi">
                     <x-icon name="menu" class="w-5 h-5" />

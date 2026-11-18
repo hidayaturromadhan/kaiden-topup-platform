@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Services\DigiflazzService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class OrderController extends Controller
 {
@@ -47,7 +48,9 @@ class OrderController extends Controller
         }
 
         $orders = $query->latest()->paginate(15)->withQueryString();
-        $games = Game::orderBy('name')->get();
+        $games = Cache::remember('admin_games_dropdown', 3600, function () {
+            return Game::orderBy('name')->get();
+        });
 
         return view('admin.orders.index', compact('orders', 'games', 'status', 'gameId', 'search'));
     }

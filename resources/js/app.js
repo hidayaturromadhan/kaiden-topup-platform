@@ -3,10 +3,12 @@ import 'notyf/notyf.min.css';
 import 'notiflix/dist/notiflix-3.3.0.min.css';
 import Notiflix from 'notiflix';
 import { Notyf } from 'notyf';
+import Chart from 'chart.js/auto';
 
 // Expose globally
 window.Notiflix = Notiflix;
 window.Notyf = Notyf;
+window.Chart = Chart;
 
 // Inisialisasi Notyf Toast (Modern, responsif, minimalis)
 const notyf = new Notyf({

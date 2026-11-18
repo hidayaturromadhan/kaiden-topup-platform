@@ -96,5 +96,38 @@ class Order extends Model
 
         return $prefix . '******' . $suffix;
     }
+
+    protected static function booted(): void
+    {
+        static::saved(function (Order $order) {
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_metrics');
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_recent_orders');
+            \Illuminate\Support\Facades\Cache::forget('home_live_testimonials');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
+            \Illuminate\Support\Facades\Cache::forget('home_default_games');
+
+            if ($order->product_id) {
+                $gameId = $order->product?->game_id;
+                if ($gameId) {
+                    \Illuminate\Support\Facades\Cache::forget("game_sales_count_{$gameId}");
+                }
+            }
+        });
+
+        static::deleted(function (Order $order) {
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_metrics');
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_recent_orders');
+            \Illuminate\Support\Facades\Cache::forget('home_live_testimonials');
+            \Illuminate\Support\Facades\Cache::forget('catalog_default_games');
+            \Illuminate\Support\Facades\Cache::forget('home_default_games');
+
+            if ($order->product_id) {
+                $gameId = $order->product?->game_id;
+                if ($gameId) {
+                    \Illuminate\Support\Facades\Cache::forget("game_sales_count_{$gameId}");
+                }
+            }
+        });
+    }
 }
 
