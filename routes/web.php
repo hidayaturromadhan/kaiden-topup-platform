@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\DigiflazzWebhookController;
@@ -131,6 +132,19 @@ Route::prefix('admin')->as('admin.')->middleware('auth')->group(function () {
     Route::get('/customers', [AdminCustomerController::class, 'index'])
         ->middleware('permission:pelanggan.lihat')
         ->name('customers.index');
+
+    // Manajemen Feedback & Ulasan Pelanggan
+    Route::get('/reviews', [AdminReviewController::class, 'index'])
+        ->middleware('permission:transaksi.lihat')
+        ->name('reviews.index');
+
+    Route::post('/reviews/{review}/toggle-popup', [AdminReviewController::class, 'toggleVisibility'])
+        ->middleware('permission:transaksi.lihat')
+        ->name('reviews.toggle_popup');
+
+    Route::post('/reviews/{review}/reply', [AdminReviewController::class, 'reply'])
+        ->middleware('permission:transaksi.lihat')
+        ->name('reviews.reply');
 
     // Laporan & Ekspor CSV
     Route::get('/reports', [AdminReportController::class, 'index'])

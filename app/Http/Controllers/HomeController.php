@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Banner;
 use App\Models\Game;
 use App\Models\Order;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -109,71 +110,53 @@ class HomeController extends Controller
 
         // Data Ulasan & Transaksi Pelanggan untuk Pop-up Beranda (Nickname dimask: misal gamerabah -> ga******bah)
         $liveTestimonials = Cache::remember('home_live_testimonials', 300, function () {
-            $realOrders = Order::with(['product.game', 'review'])
-                ->whereIn('status', ['SUKSES', 'DIBAYAR'])
-                ->latest()
+            // 1. Ambil ulasan riil yang diizinkan tampil pada pop-up (is_visible = true)
+            $visibleReviews = Review::with(['order.product.game', 'user', 'game'])
+                ->where('is_visible', true)
+                ->latest('id')
                 ->take(10)
                 ->get();
 
             $list = [];
-            foreach ($realOrders as $ord) {
-                if (!$ord->product || !$ord->product->game) continue;
-                $rawNick = $ord->confirmed_nickname ?: ($ord->user->name ?? 'gamerabah');
+            foreach ($visibleReviews as $rev) {
+                $ord = $rev->order;
+                $gameName = $rev->game->name ?? ($ord?->product?->game?->name ?? 'Game');
+                $rawNick = $ord?->confirmed_nickname ?: ($rev->user->name ?? 'gamerabah');
+                $thumb = $rev->game->thumbnail ?? ($ord?->product?->game?->thumbnail ?? 'images/bg/1.jpg');
+                $productName = $ord?->product?->name ?? 'Item Game';
+
                 $list[] = [
                     'nickname' => Order::maskNickname($rawNick),
-                    'action' => 'memesan ' . $ord->product->name . ' ' . $ord->product->game->name,
-                    'game' => $ord->product->game->name,
-                    'thumbnail' => asset($ord->product->game->thumbnail ?? 'images/bg/1.jpg'),
-                    'time_ago' => $ord->created_at ? $ord->created_at->diffForHumans() : 'baru saja',
-                    'rating' => $ord->review ? $ord->review->rating : 5,
-                    'comment' => $ord->review && $ord->review->comment ? $ord->review->comment : 'Pesanan sukses dikirim otomatis.',
+                    'action' => 'memesan ' . $productName . ' ' . $gameName,
+                    'game' => $gameName,
+                    'thumbnail' => asset($thumb),
+                    'time_ago' => $rev->created_at ? $rev->created_at->diffForHumans() : 'baru saja',
+                    'rating' => $rev->rating,
+                    'comment' => $rev->comment ?: 'Pesanan sukses dikirim otomatis.',
                 ];
             }
 
-            // Fallback contoh realistis pelanggan jika data database masih baru
+            // 2. Jika ada transaksi sukses nyata lainnya yang belum memiliki ulasan, sertakan transaksi riil
             if (count($list) < 4) {
-                $fallbacks = [
-                    [
-                        'nickname' => Order::maskNickname('gamerabah'),
-                        'action' => 'memesan 70 Diamonds Free Fire',
-                        'game' => 'Free Fire',
-                        'thumbnail' => asset('images/bg/freefire.jpg'),
-                        'time_ago' => '2 menit yang lalu',
-                        'rating' => 5,
-                        'comment' => 'Top up diamond Free Fire kilat banget, baru bayar langsung masuk!',
-                    ],
-                    [
-                        'nickname' => Order::maskNickname('sultan_alucard'),
-                        'action' => 'memesan Weekly Diamond Pass Mobile Legends',
-                        'game' => 'Mobile Legends',
-                        'thumbnail' => asset('images/bg/aspirant.jpg'),
-                        'time_ago' => '5 menit yang lalu',
-                        'rating' => 5,
-                        'comment' => 'Weekly pass langsung aktif otomatis kurang dari 30 detik. Recommended!',
-                    ],
-                    [
-                        'nickname' => Order::maskNickname('rey_sniper'),
-                        'action' => 'memesan 1375 Points Valorant',
-                        'game' => 'Valorant',
-                        'thumbnail' => asset('images/bg/valorant.jpg'),
-                        'time_ago' => '8 menit yang lalu',
-                        'rating' => 5,
-                        'comment' => 'Bayar pakai QRIS langsung terverifikasi instan tanpa ribet.',
-                    ],
-                    [
-                        'nickname' => Order::maskNickname('bintang_mythic'),
-                        'action' => 'memesan 296 Diamonds Mobile Legends',
-                        'game' => 'Mobile Legends',
-                        'thumbnail' => asset('images/bg/aspirant.jpg'),
-                        'time_ago' => '12 menit yang lalu',
-                        'rating' => 5,
-                        'comment' => 'Harga paling murah dan proses resmi anti minus diamond.',
-                    ],
-                ];
+                $realOrders = Order::with(['product.game', 'user'])
+                    ->whereIn('status', ['SUKSES', 'DIBAYAR'])
+                    ->whereDoesntHave('review')
+                    ->latest('id')
+                    ->take(5)
+                    ->get();
 
-                foreach ($fallbacks as $fb) {
-                    if (count($list) >= 6) break;
-                    $list[] = $fb;
+                foreach ($realOrders as $ord) {
+                    if (!$ord->product || !$ord->product->game) continue;
+                    $rawNick = $ord->confirmed_nickname ?: ($ord->user->name ?? 'Pelanggan');
+                    $list[] = [
+                        'nickname' => Order::maskNickname($rawNick),
+                        'action' => 'memesan ' . $ord->product->name . ' ' . $ord->product->game->name,
+                        'game' => $ord->product->game->name,
+                        'thumbnail' => asset($ord->product->game->thumbnail ?? 'images/bg/1.jpg'),
+                        'time_ago' => $ord->created_at ? $ord->created_at->diffForHumans() : 'baru saja',
+                        'rating' => 5,
+                        'comment' => 'Pesanan sukses dikirim otomatis.',
+                    ];
                 }
             }
 

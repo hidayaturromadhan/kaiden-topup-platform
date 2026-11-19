@@ -534,7 +534,8 @@
     </div>
 </div>
 
-<!-- Live Transaction & Testimonial Floating Popup (Nickname Masking: misal gamerabah -> ga******bah) -->
+<!-- Live Transaction & Testimonial Floating Popup (Hanya muncul jika ada transaksi/ulasan riil) -->
+@if(!empty($liveTestimonials) && count($liveTestimonials) > 0)
 <div id="live-testimonial-popup" 
      class="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-40 max-w-[340px] sm:max-w-sm w-[calc(100%-2rem)] sm:w-auto transform transition-all duration-500 ease-out translate-y-8 opacity-0 pointer-events-none"
      aria-live="polite">
@@ -579,6 +580,7 @@
         </button>
     </div>
 </div>
+@endif
 @endsection
 
 @push('scripts')

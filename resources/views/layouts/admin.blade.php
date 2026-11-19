@@ -75,6 +75,13 @@
                         </a>
                     @endif
 
+                    @if(auth()->user()->hasPermission('transaksi.lihat'))
+                        <a href="{{ route('admin.reviews.index') }}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition {{ request()->routeIs('admin.reviews.*') ? 'bg-[#6D0808] text-white shadow-xs' : 'text-white/70 hover:text-white hover:bg-white/5' }}">
+                            <x-icon name="message-square" class="w-4 h-4" />
+                            <span>Feedback & Ulasan</span>
+                        </a>
+                    @endif
+
                     @if(auth()->user()->hasPermission('laporan.lihat'))
                         <a href="{{ route('admin.reports.index') }}" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition {{ request()->routeIs('admin.reports.*') ? 'bg-[#6D0808] text-white shadow-xs' : 'text-white/70 hover:text-white hover:bg-white/5' }}">
                             <x-icon name="file-text" class="w-4 h-4" />

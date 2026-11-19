@@ -130,4 +130,105 @@ class ReviewFeedbackTest extends TestCase
         $response->assertSee('live-testimonial-popup');
         $response->assertSee('ga******bah');
     }
+
+    public function test_admin_and_superadmin_can_access_reviews_index()
+    {
+        $admin = User::where('email', 'admin@kaiden.id')->first();
+        $superadmin = User::where('email', 'superadmin@kaiden.id')->first();
+
+        $adminResponse = $this->actingAs($admin)->get(route('admin.reviews.index'));
+        $adminResponse->assertStatus(200);
+        $adminResponse->assertSee('Feedback &amp; Ulasan Pelanggan', false);
+
+        $superadminResponse = $this->actingAs($superadmin)->get(route('admin.reviews.index'));
+        $superadminResponse->assertStatus(200);
+        $superadminResponse->assertSee('Feedback &amp; Ulasan Pelanggan', false);
+    }
+
+    public function test_regular_customer_cannot_access_admin_reviews()
+    {
+        $customer = User::where('email', 'pelanggan@kaiden.id')->first();
+
+        $response = $this->actingAs($customer)->get(route('admin.reviews.index'));
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_can_toggle_review_popup_visibility()
+    {
+        $admin = User::where('email', 'admin@kaiden.id')->first();
+        $customer = User::where('email', 'pelanggan@kaiden.id')->first();
+        $product = Product::first();
+
+        $order = Order::create([
+            'order_code' => 'KDN-TEST-TOGGLE-1',
+            'user_id' => $customer->id,
+            'product_id' => $product->id,
+            'user_id_game' => '12345678',
+            'confirmed_nickname' => 'gamerabah',
+            'locked_price' => $product->sell_price,
+            'status' => 'SUKSES',
+        ]);
+
+        $review = Review::create([
+            'order_id' => $order->id,
+            'user_id' => $customer->id,
+            'game_id' => $product->game_id,
+            'rating' => 5,
+            'comment' => 'Ulasan khusus untuk uji toggle pop-up',
+            'is_visible' => true,
+        ]);
+
+        $this->assertTrue($review->is_visible);
+
+        // 1. Admin menyembunyikan (Hide) review dari pop-up
+        $response = $this->actingAs($admin)->post(route('admin.reviews.toggle_popup', $review->id));
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $review->refresh();
+        $this->assertFalse((bool)$review->is_visible);
+
+        // 2. Admin menampilkan kembali (Show) review ke pop-up
+        $response2 = $this->actingAs($admin)->post(route('admin.reviews.toggle_popup', $review->id));
+        $response2->assertRedirect();
+
+        $review->refresh();
+        $this->assertTrue((bool)$review->is_visible);
+    }
+
+    public function test_admin_can_reply_to_customer_review()
+    {
+        $admin = User::where('email', 'admin@kaiden.id')->first();
+        $customer = User::where('email', 'pelanggan@kaiden.id')->first();
+        $product = Product::first();
+
+        $order = Order::create([
+            'order_code' => 'KDN-TEST-REPLY-1',
+            'user_id' => $customer->id,
+            'product_id' => $product->id,
+            'user_id_game' => '12345678',
+            'confirmed_nickname' => 'gamerabah',
+            'locked_price' => $product->sell_price,
+            'status' => 'SUKSES',
+        ]);
+
+        $review = Review::create([
+            'order_id' => $order->id,
+            'user_id' => $customer->id,
+            'game_id' => $product->game_id,
+            'rating' => 5,
+            'comment' => 'Pelayanan sangat memuaskan!',
+            'is_visible' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.reviews.reply', $review->id), [
+            'admin_reply' => 'Terima kasih atas kepercayaannya top up di KAIDEN!',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $review->refresh();
+        $this->assertEquals('Terima kasih atas kepercayaannya top up di KAIDEN!', $review->admin_reply);
+    }
 }

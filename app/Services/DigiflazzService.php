@@ -14,14 +14,31 @@ use Illuminate\Support\Facades\Log;
 
 class DigiflazzService
 {
+    public function isProduction(): bool
+    {
+        if (app()->environment('testing')) {
+            return false;
+        }
+        $mode = env('DIGIFLAZZ_MODE', config('services.digiflazz.mode', 'development'));
+        return strtolower($mode) === 'production';
+    }
+
     public function getUsername(): string
     {
-        return Setting::get('digiflazz_username', config('services.digiflazz.username', env('DIGIFLAZZ_USERNAME', 'kaiden_dev')));
+        $envUser = env('DIGIFLAZZ_USERNAME');
+        if (!empty($envUser) && $envUser !== 'vakakogkwOjg' && $envUser !== 'kaiden_dev') {
+            return $envUser;
+        }
+        return Setting::get('digiflazz_username', config('services.digiflazz.username', $envUser ?: 'kaiden_dev'));
     }
 
     public function getApiKey(): string
     {
-        return Setting::get('digiflazz_api_key', config('services.digiflazz.api_key', env('DIGIFLAZZ_API_KEY', 'dev-digiflazz-key')));
+        $envKey = env('DIGIFLAZZ_API_KEY');
+        if (!empty($envKey) && $envKey !== 'c0ee16ec-5dcd-5939-bb79-e28ccdbcb298' && $envKey !== 'dev-digiflazz-key') {
+            return $envKey;
+        }
+        return Setting::get('digiflazz_api_key', config('services.digiflazz.api_key', $envKey ?: 'dev-digiflazz-key'));
     }
 
     public function getBaseUrl(): string
@@ -34,7 +51,7 @@ class DigiflazzService
      */
     public function getLowBalanceThreshold(): int
     {
-        return (int)Setting::get('digiflazz_low_balance_threshold', 500000);
+        return (int)Setting::get('digiflazz_low_balance_threshold', config('services.digiflazz.low_balance_threshold', 500000));
     }
 
     /**
@@ -156,6 +173,21 @@ class DigiflazzService
     {
         $order->load(['product.game', 'user']);
 
+        // Keamanan Eksekusi: Tolak pemenuhan jika pesanan berstatus batal atau kedaluwarsa
+        if (in_array($order->status, ['DIBATALKAN', 'KEDALUWARSA'])) {
+            Log::warning("Pencegahan Eksekusi: Pesanan {$order->order_code} berstatus {$order->status} dicegah dari pemenuhan Digiflazz.");
+            $existing = Fulfillment::where('order_id', $order->id)->latest('id')->first();
+            if ($existing) {
+                return $existing;
+            }
+            return Fulfillment::create([
+                'order_id' => $order->id,
+                'digiflazz_ref_id' => 'DF-PREVENTED-' . $order->order_code . '-' . time(),
+                'status' => 'gagal',
+                'response_summary' => 'Pesanan dibatalkan/kedaluwarsa, pemenuhan dicegah oleh sistem.',
+            ]);
+        }
+
         // Set status pesanan menjadi DIPROSES
         $order->status = 'DIPROSES';
         $order->save();
@@ -197,25 +229,46 @@ class DigiflazzService
                 } elseif ($statusStr === 'gagal') {
                     $fulfillmentStatus = 'gagal';
                     $order->status = 'GAGAL';
+                    $order->notes = ($order->notes ? $order->notes . "\n" : '') . "[DIGIFLAZZ GAGAL]: {$summary}";
                     $order->save();
                 } else {
                     $fulfillmentStatus = 'pending';
+                    $order->status = 'DIPROSES';
+                    $order->save();
                 }
             } else {
-                // Respons bukan 200 (misalnya akun tes / sandbox)
-                // Simulasi sukses fulfillment untuk sandbox testing jika SKU lokal
-                $fulfillmentStatus = 'sukses';
-                $summary = 'Simulasi pengiriman otomatis sukses (SN: KDN' . rand(10000000, 99999999) . ')';
-                $order->status = 'SUKSES';
-                $order->save();
+                if ($this->isProduction()) {
+                    // MODE PRODUCTION: Jangan membuat sukses palsu jika Digiflazz menolak transaksi
+                    $errData = $response->json()['data'] ?? [];
+                    $errMessage = $errData['message'] ?? ($response->json()['message'] ?? 'Provider Digiflazz menolak permintaan (HTTP ' . $response->status() . ')');
+                    $fulfillmentStatus = 'gagal';
+                    $summary = $errMessage;
+                    $order->status = 'GAGAL';
+                    $order->notes = ($order->notes ? $order->notes . "\n" : '') . "[DIGIFLAZZ GAGAL]: {$errMessage}";
+                    $order->save();
+                } else {
+                    // Mode Pengujian / Sandbox Lokal
+                    $fulfillmentStatus = 'sukses';
+                    $summary = 'Simulasi pengiriman otomatis sukses (SN: KDN' . rand(10000000, 99999999) . ')';
+                    $order->status = 'SUKSES';
+                    $order->save();
+                }
             }
         } catch (\Throwable $e) {
             Log::error("Digiflazz fulfillment exception for Order {$order->order_code}: " . $e->getMessage());
-            // Fallback status pending untuk antrean follow-up
-            $fulfillmentStatus = 'sukses';
-            $summary = 'Simulasi pengiriman otomatis berhasil dijalankan (Local Dev)';
-            $order->status = 'SUKSES';
-            $order->save();
+            if ($this->isProduction()) {
+                // MODE PRODUCTION: Tandai pending untuk antrean follow-up admin (jangan palsukan sukses)
+                $fulfillmentStatus = 'pending';
+                $summary = 'Timeout saat menghubungkan ke Digiflazz: ' . $e->getMessage();
+                $order->status = 'DIPROSES';
+                $order->notes = ($order->notes ? $order->notes . "\n" : '') . "[DIGIFLAZZ TIMEOUT]: Menunggu callback webhook atau retry admin.";
+                $order->save();
+            } else {
+                $fulfillmentStatus = 'sukses';
+                $summary = 'Simulasi pengiriman otomatis berhasil dijalankan (Local Dev)';
+                $order->status = 'SUKSES';
+                $order->save();
+            }
         }
 
         $fulfillment = Fulfillment::create([

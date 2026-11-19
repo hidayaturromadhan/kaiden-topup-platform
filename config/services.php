@@ -43,9 +43,11 @@ return [
     ],
 
     'digiflazz' => [
+        'mode' => env('DIGIFLAZZ_MODE', 'development'),
         'username' => env('DIGIFLAZZ_USERNAME', 'kaiden_dev'),
         'api_key' => env('DIGIFLAZZ_API_KEY', 'dev-digiflazz-key'),
         'base_url' => env('DIGIFLAZZ_BASE_URL', 'https://api.digiflazz.com/v1'),
+        'low_balance_threshold' => (int)env('DIGIFLAZZ_LOW_BALANCE_THRESHOLD', 500000),
     ],
 
 ];
