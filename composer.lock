@@ -4,8 +4,55 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d8f67b824a1bf31c8999ead558d9b485",
+    "content-hash": "6fcc380e3a57eb43e2a66dec0bd48186",
     "packages": [
+        {
+            "name": "aditamagf/check-ign",
+            "version": "v2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aditamagf/check-ign.git",
+                "reference": "1145836724065236fa399b67e7b4857b7e119d80"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aditamagf/check-ign/zipball/1145836724065236fa399b67e7b4857b7e119d80",
+                "reference": "1145836724065236fa399b67e7b4857b7e119d80",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Aditdev\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "aditamagf",
+                    "email": "business@aditdev.id"
+                }
+            ],
+            "description": "Un-official API to Check Username Game By Account ID",
+            "support": {
+                "issues": "https://github.com/aditamagf/check-ign/issues",
+                "source": "https://github.com/aditamagf/check-ign/tree/v2.0"
+            },
+            "funding": [
+                {
+                    "url": "https://trakteer.id/aditamagf/tip",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://ko-fi.com/aditamagf",
+                    "type": "ko_fi"
+                }
+            ],
+            "time": "2026-06-28T20:13:15+00:00"
+        },
         {
             "name": "brick/math",
             "version": "0.14.8",

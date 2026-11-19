@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -51,35 +52,51 @@ class OrderController extends Controller
     }
 
     /**
-     * Pengecekan IGN Server-side (FR-IGN-1 & RULES.md Section 5.A)
+     * Pengecekan IGN Server-side (FR-IGN-1, RULES.md Section 5.A, & Keamanan/Rate-Limiting Ketat)
      */
     public function checkIgn(Request $request)
     {
-        $request->validate([
-            'game_code' => ['required', 'string'],
-            'user_id' => ['required', 'string', 'max:50'],
-            'zone_id' => ['nullable', 'string', 'max:50'],
+        $validated = $request->validate([
+            'game_code' => ['required', 'string', 'max:40'],
+            'user_id' => ['required', 'string', 'min:3', 'max:50'],
+            'zone_id' => ['nullable', 'string', 'max:30'],
         ]);
 
         $ip = $request->ip();
         $rateKey = "ign_check_rate:{$ip}";
 
-        // Rate limiter pada route pengecekan (RULES.md Section 5.A.2)
-        if (RateLimiter::tooManyAttempts($rateKey, 20)) {
+        // Rate limiter diperketat: batas maksimal 8 permintaan per menit per IP (RULES.md Section 5.A.2)
+        $maxAttempts = (int) config('services.ign.rate_limit_per_minute', 8);
+        if (RateLimiter::tooManyAttempts($rateKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($rateKey);
             return response()->json([
                 'success' => false,
-                'message' => "Terlalu banyak permintaan pengecekan ID. Harap tunggu {$seconds} detik.",
+                'message' => "Terlalu banyak permintaan pengecekan ID. Harap tunggu {$seconds} detik sebelum mencoba kembali demi keamanan akun.",
             ], 429);
         }
 
         RateLimiter::hit($rateKey, 60);
 
-        $result = $this->gameCheckService->check(
-            $request->input('game_code'),
-            $request->input('user_id'),
-            $request->input('zone_id')
-        );
+        $gameCode = strtoupper(trim($validated['game_code']));
+        $userId = trim($validated['user_id']);
+        $zoneId = isset($validated['zone_id']) ? trim($validated['zone_id']) : null;
+
+        // Sanitasi & Proteksi Keamanan: Tolak karakter berbahaya (SQL Injection, XSS, Null Bytes, Path Traversal)
+        if (preg_match('/[<>"\';`\0\x00]|(--)|(\/\*)|(\.\.\/)|(union\s+select)|(script)/i', $userId . ($zoneId ?? ''))) {
+            Log::warning("Percobaan pengecekan ID tidak sah / mencurigakan dari IP {$ip}", [
+                'game_code' => $gameCode,
+                'user_id' => $userId,
+                'zone_id' => $zoneId,
+                'ip' => $ip,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Format ID akun tidak valid atau mengandung karakter terlarang.',
+            ], 422);
+        }
+
+        $result = $this->gameCheckService->check($gameCode, $userId, $zoneId);
 
         return response()->json($result);
     }

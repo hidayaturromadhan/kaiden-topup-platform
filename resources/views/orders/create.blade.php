@@ -305,6 +305,20 @@ document.addEventListener('DOMContentLoaded', function () {
         inputZoneId.addEventListener('input', updateUserIdSummary);
     }
 
+    if (manualCheckbox) {
+        manualCheckbox.addEventListener('change', function () {
+            if (this.checked && !isIgnVerified) {
+                const uid = inputUserId.value.trim();
+                summaryNickname.textContent = uid ? 'Konfirmasi Manual (' + uid + ')' : 'Konfirmasi Manual';
+                if (window.kaidenToast) {
+                    window.kaidenToast.info('Konfirmasi ID manual dipilih. Anda dapat langsung memilih nominal produk dan melanjutkan pemesanan.');
+                }
+            } else if (!this.checked && !isIgnVerified) {
+                summaryNickname.textContent = 'Menunggu Konfirmasi Manual';
+            }
+        });
+    }
+
     // Pengecekan Nickname Game via Fetch Server-Side
     btnCheckIgn.addEventListener('click', async function () {
         const userId = inputUserId.value.trim();
@@ -350,9 +364,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
             });
 
-            const data = await response.json();
+            let data = {};
+            try {
+                data = await response.json();
+            } catch (err) {
+                data = { success: false, message: 'Respon dari server tidak valid.' };
+            }
 
-            if (data.success && data.nickname) {
+            if (response.ok && data.success && data.nickname) {
                 isIgnVerified = true;
                 confirmedNickInput.value = data.nickname;
                 summaryNickname.textContent = data.nickname;
@@ -374,16 +393,71 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
                 resultBox.classList.remove('hidden');
             } else {
-                // Skenario Checker Gagal / Server Sibuk / Fallback
                 isIgnVerified = false;
                 confirmedNickInput.value = '';
                 summaryNickname.textContent = 'Menunggu Konfirmasi Manual';
 
-                if (window.kaidenToast) {
-                    window.kaidenToast.warning('Pemeriksaan otomatis tidak tersedia. Silakan centang konfirmasi manual.');
-                }
+                const errorMsg = data.message || 'Pemeriksaan otomatis tidak berhasil. Silakan periksa kembali User ID Anda.';
 
-                fallbackBox.classList.remove('hidden');
+                // Jika terkena Rate Limiting (429)
+                if (response.status === 429) {
+                    if (window.kaidenToast) {
+                        window.kaidenToast.warning(errorMsg);
+                    }
+                    resultBox.className = 'mt-3 p-3.5 rounded-xl text-xs bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-start space-x-2';
+                    resultBox.innerHTML = `
+                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <div>
+                            <div class="font-bold text-amber-950 dark:text-amber-100">Batas Permintaan Tercapai (Rate Limit)</div>
+                            <div class="mt-0.5 text-amber-800/90 dark:text-amber-300/90">${errorMsg}</div>
+                        </div>
+                    `;
+                    resultBox.classList.remove('hidden');
+                    fallbackBox.classList.remove('hidden');
+                }
+                // Jika validasi gagal (422)
+                else if (response.status === 422) {
+                    if (window.kaidenToast) {
+                        window.kaidenToast.error(errorMsg);
+                    }
+                    resultBox.className = 'mt-3 p-3.5 rounded-xl text-xs bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 flex items-start space-x-2';
+                    resultBox.innerHTML = `
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div>
+                            <div class="font-bold text-rose-950 dark:text-rose-100">Format Input Tidak Valid</div>
+                            <div class="mt-0.5 text-rose-800/90 dark:text-rose-300/90">${errorMsg}</div>
+                        </div>
+                    `;
+                    resultBox.classList.remove('hidden');
+                }
+                // Jika server game mengalami kendala jaringan / antrean / timeout / feature disabled (RULES.md Section 5.A.3)
+                else if (data.is_error || data.feature_disabled) {
+                    if (window.kaidenToast) {
+                        window.kaidenToast.info(errorMsg);
+                    }
+                    resultBox.classList.add('hidden');
+                    fallbackBox.classList.remove('hidden');
+                    if (manualCheckbox) {
+                        manualCheckbox.checked = true;
+                    }
+                    summaryNickname.textContent = 'Konfirmasi Manual (' + userId + ')';
+                }
+                // Jika ID eksplisit diverifikasi tidak ditemukan pada server game
+                else {
+                    if (window.kaidenToast) {
+                        window.kaidenToast.warning(errorMsg);
+                    }
+                    resultBox.className = 'mt-3 p-3.5 rounded-xl text-xs bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 flex items-start space-x-2';
+                    resultBox.innerHTML = `
+                        <svg class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <div>
+                            <div class="font-bold text-rose-950 dark:text-rose-100">User ID Tidak Ditemukan</div>
+                            <div class="mt-0.5 text-rose-800/90 dark:text-rose-300/90">${errorMsg}</div>
+                        </div>
+                    `;
+                    resultBox.classList.remove('hidden');
+                    fallbackBox.classList.remove('hidden');
+                }
             }
         } catch (e) {
             isIgnVerified = false;
