@@ -192,9 +192,8 @@ class CatalogController extends Controller
             $products = $productsQuery->get();
         }
 
-        $currentBalance = $this->digiflazzService->getCurrentBalance();
-        $products->each(function ($prod) use ($currentBalance) {
-            $prod->is_stock_available = ($currentBalance >= $prod->cost_price);
+        $products->each(function ($prod) {
+            $prod->is_stock_available = (bool) $prod->is_active;
         });
 
         $totalGamesCount = Cache::remember('active_games_total_count', 3600, fn() => Game::where('status', 'aktif')->count());

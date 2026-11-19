@@ -98,9 +98,13 @@ class Game extends Model
             return round((float) $this->attributes['reviews_avg_rating'], 1);
         }
 
+        if (array_key_exists('reviews_avg_rating', $this->attributes) && $this->attributes['reviews_avg_rating'] === null) {
+            return 0.0;
+        }
+
         return (float) \Illuminate\Support\Facades\Cache::remember("game_rating_{$this->id}", 300, function () {
             $avg = $this->reviews()->where('is_visible', true)->avg('rating');
-            return $avg ? round((float) $avg, 1) : 5.0;
+            return $avg ? round((float) $avg, 1) : 0.0;
         });
     }
 

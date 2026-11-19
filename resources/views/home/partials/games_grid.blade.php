@@ -96,11 +96,14 @@
                     <span class="text-[#212121]/50 dark:text-zinc-400 font-medium">
                         {{ $game->sales_count_formatted }} terjual
                     </span>
-                    <div class="flex items-center space-x-0.5 text-[#212121]/80 dark:text-zinc-300 font-bold" title="{{ $game->reviews_count > 0 ? $game->reviews_count . ' ulasan pelanggan' : 'Belum ada ulasan' }}">
-                        <x-icon name="star" class="w-3 h-3 text-amber-400" fill="currentColor" />
-                        <span class="font-mono text-[10px]">{{ number_format($game->average_rating, 1) }}</span>
-                        @if($game->reviews_count > 0)
+                    <div class="flex items-center space-x-0.5 font-bold" title="{{ $game->reviews_count > 0 ? $game->reviews_count . ' ulasan pelanggan' : 'Belum ada ulasan' }}">
+                        @if($game->reviews_count > 0 && $game->average_rating > 0)
+                            <x-icon name="star" class="w-3 h-3 text-amber-400" fill="currentColor" />
+                            <span class="font-mono text-[10px] text-[#212121]/80 dark:text-zinc-300">{{ number_format($game->average_rating, 1) }}</span>
                             <span class="font-sans font-normal text-[9px] text-[#212121]/50 dark:text-zinc-400">({{ $game->reviews_count }})</span>
+                        @else
+                            <x-icon name="star" class="w-3 h-3 text-stone-300 dark:text-zinc-600" />
+                            <span class="font-mono text-[10px] text-[#212121]/40 dark:text-zinc-500">0</span>
                         @endif
                     </div>
                 </div>

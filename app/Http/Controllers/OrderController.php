@@ -42,9 +42,9 @@ class OrderController extends Controller
 
         $currentBalance = $this->digiflazzService->getCurrentBalance();
 
-        // Tandai ketersediaan tiap produk terhadap saldo modal operasional supplier
-        $products->each(function ($prod) use ($currentBalance) {
-            $prod->is_stock_available = ($currentBalance >= $prod->cost_price);
+        // Ketersediaan produk berdasarkan status aktif dari database & Digiflazz
+        $products->each(function ($prod) {
+            $prod->is_stock_available = (bool) $prod->is_active;
         });
 
         return view('orders.create', compact('game', 'products', 'currentBalance'));
