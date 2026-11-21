@@ -28,6 +28,7 @@ class CatalogController extends Controller
         // Daftar kategori game aktif
         $categories = Cache::remember('active_game_categories', 3600, function () {
             return Game::where('status', 'aktif')
+                ->whereHas('activeProducts')
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category');
@@ -36,6 +37,7 @@ class CatalogController extends Controller
         // Daftar publisher aktif
         $publishers = Cache::remember('active_game_publishers', 3600, function () {
             return Game::where('status', 'aktif')
+                ->whereHas('activeProducts')
                 ->whereNotNull('publisher')
                 ->distinct()
                 ->pluck('publisher');
@@ -47,6 +49,7 @@ class CatalogController extends Controller
         if ($isDefaultGames) {
             $games = Cache::remember('catalog_default_games', 600, function () {
                 return Game::where('status', 'aktif')
+                    ->whereHas('activeProducts')
                     ->withCount('activeProducts')
                     ->withCount(['orders' => function ($q) {
                         $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
@@ -67,6 +70,7 @@ class CatalogController extends Controller
             });
         } else {
             $gamesQuery = Game::where('status', 'aktif')
+                ->whereHas('activeProducts')
                 ->withCount('activeProducts')
                 ->withCount(['orders' => function ($q) {
                     $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
@@ -138,8 +142,13 @@ class CatalogController extends Controller
         if ($isDefaultProducts) {
             $products = Cache::remember('catalog_default_products', 600, function () {
                 return Product::where('is_active', true)
+                    ->withCount(['orders' => function ($q) {
+                        $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+                    }])
                     ->with(['game' => function ($q) {
-                        $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail');
+                        $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail')
+                          ->withCount(['reviews' => fn($rq) => $rq->where('is_visible', true)])
+                          ->withAvg(['reviews' => fn($rq) => $rq->where('is_visible', true)], 'rating');
                     }])
                     ->whereHas('game', fn($gq) => $gq->where('status', 'aktif'))
                     ->orderBy('sell_price', 'asc')
@@ -147,8 +156,13 @@ class CatalogController extends Controller
             });
         } else {
             $productsQuery = Product::where('is_active', true)
+                ->withCount(['orders' => function ($q) {
+                    $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
+                }])
                 ->with(['game' => function ($q) {
-                    $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail');
+                    $q->select('id', 'name', 'slug', 'category', 'publisher', 'thumbnail')
+                      ->withCount(['reviews' => fn($rq) => $rq->where('is_visible', true)])
+                      ->withAvg(['reviews' => fn($rq) => $rq->where('is_visible', true)], 'rating');
                 }])
                 ->whereHas('game', function ($gq) use ($category, $publisher) {
                     $gq->where('status', 'aktif');
@@ -196,7 +210,7 @@ class CatalogController extends Controller
             $prod->is_stock_available = (bool) $prod->is_active;
         });
 
-        $totalGamesCount = Cache::remember('active_games_total_count', 3600, fn() => Game::where('status', 'aktif')->count());
+        $totalGamesCount = Cache::remember('active_games_total_count', 3600, fn() => Game::where('status', 'aktif')->whereHas('activeProducts')->count());
         $totalProductsCount = Cache::remember('active_products_total_count', 3600, fn() => Product::where('is_active', true)->whereHas('game', fn($q) => $q->where('status', 'aktif'))->count());
 
         // Respon AJAX dinamis untuk filter tanpa reload halaman dengan skeleton web render

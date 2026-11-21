@@ -31,7 +31,7 @@
             };
         @endphp
 
-        <a href="{{ route('order.game', $game->slug) }}" class="group flex flex-col rounded-xl bg-white dark:bg-[#1C1C20] border border-stone-200/80 dark:border-white/10 hover:border-[#6D0808]/40 dark:hover:border-rose-500/50 hover:shadow-md transition-all duration-200 overflow-hidden text-left transform-gpu">
+        <a href="{{ route('order.game', $game->slug) }}" class="home-game-card shrink-0 group flex flex-col rounded-xl bg-white dark:bg-[#1C1C20] border border-stone-200/80 dark:border-white/10 hover:border-[#6D0808]/40 dark:hover:border-rose-500/50 hover:shadow-md transition-all duration-200 overflow-hidden text-left transform-gpu select-none">
             
             <!-- 1. POSTER IMAGE (Portrait Aspect Ratio) -->
             <div class="relative w-full aspect-[4/5] overflow-hidden bg-stone-100 dark:bg-stone-900">

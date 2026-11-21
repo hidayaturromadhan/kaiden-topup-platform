@@ -170,15 +170,33 @@
                             @endif
                         </div>
 
-                        <!-- Body Item: Denominasi & SKU -->
+                        <!-- Body Item: Denominasi & Kategori (SKU Disembunyikan Karena Terlalu Teknis) -->
                         <div class="space-y-1">
                             <h4 class="text-xs sm:text-sm font-bold text-[#212121] dark:text-zinc-100 leading-snug">
                                 {{ $prod->name }}
                             </h4>
-                            <div class="flex items-center space-x-2 text-[10px] text-[#212121]/50 dark:text-zinc-400 font-mono">
-                                <span>SKU: {{ $prod->digiflazz_sku }}</span>
+                            <div class="flex items-center space-x-1.5 text-[10px] text-[#212121]/50 dark:text-zinc-400 font-medium">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>{{ $prod->category ?? 'Item Resmi' }}</span>
                                 <span>•</span>
-                                <span>{{ $prod->category ?? 'Item' }}</span>
+                                <span>Pengiriman Instan &lt; 60s</span>
+                            </div>
+                        </div>
+
+                        <!-- Info Terjual & Rating Riil (Konsisten dengan Kartu Game) -->
+                        <div class="pt-1.5 border-t border-[#212121]/5 dark:border-white/10 flex items-center justify-between text-[10px]">
+                            <span class="text-[#212121]/50 dark:text-zinc-400 font-medium">
+                                {{ $prod->sales_count_formatted }} terjual
+                            </span>
+                            <div class="flex items-center space-x-0.5 font-bold" title="{{ $prod->reviews_count > 0 ? $prod->reviews_count . ' ulasan pelanggan' : 'Belum ada ulasan' }}">
+                                @if($prod->reviews_count > 0 && $prod->average_rating > 0)
+                                    <x-icon name="star" class="w-3 h-3 text-amber-400" fill="currentColor" />
+                                    <span class="font-mono text-[10px] text-[#212121]/80 dark:text-zinc-300">{{ number_format($prod->average_rating, 1) }}</span>
+                                    <span class="font-sans font-normal text-[9px] text-[#212121]/50 dark:text-zinc-400">({{ $prod->reviews_count }})</span>
+                                @else
+                                    <x-icon name="star" class="w-3 h-3 text-stone-300 dark:text-zinc-600" />
+                                    <span class="font-mono text-[10px] text-[#212121]/40 dark:text-zinc-500">0</span>
+                                @endif
                             </div>
                         </div>
 

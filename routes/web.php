@@ -102,6 +102,11 @@ Route::prefix('admin')->as('admin.')->middleware('auth')->group(function () {
         ->middleware('permission:produk.sinkron')
         ->name('products.sync');
 
+    // Kelola Gambar & Metadata Game Produk (permission: produk.ubah)
+    Route::post('/games/{game}/update-image', [AdminProductController::class, 'updateGameImage'])
+        ->middleware('permission:produk.ubah')
+        ->name('games.update_image');
+
     // Manajemen Banner & Promo Beranda
     Route::resource('banners', AdminBannerController::class)
         ->except(['show'])

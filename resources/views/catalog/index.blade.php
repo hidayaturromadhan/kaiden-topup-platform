@@ -32,7 +32,7 @@
                 Pilih game favoritmu atau cari langsung item diamond, membership pass, voucher, dan points resmi dengan jaminan pengiriman instan &lt; 60 detik.
             </p>
 
-            <!-- Mode Tampilan Switch (Games vs Products) -->
+            <!-- Mode Tampilan Koleksi Game Sesuai Permintaan User -->
             <div class="pt-3 flex flex-wrap items-center gap-2" id="catalog-tab-switch">
                 <button type="button" 
                         onclick="setCatalogTab('games')"
@@ -41,13 +41,15 @@
                     <x-icon name="gamepad" class="w-4 h-4" />
                     <span id="tab-label-games">Koleksi Game ({{ $totalGamesCount }})</span>
                 </button>
-                <button type="button" 
-                        onclick="setCatalogTab('products')"
-                        id="tab-btn-products"
-                        class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer {{ $tab === 'products' ? 'bg-[#6D0808] text-white' : 'bg-white/10 text-white/80 hover:bg-white/20' }}">
-                    <x-icon name="package" class="w-4 h-4" />
-                    <span id="tab-label-products">Semua Paket Item ({{ $totalProductsCount }})</span>
-                </button>
+                @if($tab === 'products')
+                    <button type="button" 
+                            onclick="setCatalogTab('products')"
+                            id="tab-btn-products"
+                            class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer bg-[#6D0808] text-white">
+                        <x-icon name="package" class="w-4 h-4" />
+                        <span id="tab-label-products">Semua Paket Item ({{ $totalProductsCount }})</span>
+                    </button>
+                @endif
             </div>
         </div>
     </div>
@@ -67,7 +69,7 @@
                        id="filter-input-search"
                        value="{{ $search }}" 
                        autocomplete="off"
-                       placeholder="Cari nama game, item, atau SKU..." 
+                       placeholder="Cari nama game atau paket item..." 
                        class="w-full pl-10 pr-24 py-2.5 rounded-xl border border-[#212121]/15 dark:border-white/15 bg-white dark:bg-zinc-800 text-xs sm:text-sm text-[#212121] dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 dark:focus:ring-rose-500/30 focus:border-[#6D0808] dark:focus:border-rose-500 transition placeholder:text-[#212121]/40 dark:placeholder:text-zinc-400 font-medium">
                 
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#212121]/50 dark:text-zinc-400">
@@ -190,10 +192,15 @@
                             <div class="h-3 bg-stone-200 dark:bg-zinc-700 rounded w-28"></div>
                         </div>
                     </div>
-                    <!-- Skeleton Product Denom & SKU -->
+                    <!-- Skeleton Product Denom & Subtitle -->
                     <div class="space-y-1.5">
                         <div class="h-4 bg-stone-200 dark:bg-zinc-700/80 rounded w-3/4"></div>
                         <div class="h-3 bg-stone-100 dark:bg-zinc-800 rounded w-1/3"></div>
+                    </div>
+                    <!-- Skeleton Sales & Rating Row -->
+                    <div class="pt-1.5 border-t border-stone-100 dark:border-white/10 flex items-center justify-between">
+                        <div class="h-3 bg-stone-100 dark:bg-zinc-800 rounded w-14"></div>
+                        <div class="h-3 bg-stone-100 dark:bg-zinc-800 rounded w-10"></div>
                     </div>
                     <!-- Skeleton Product Footer -->
                     <div class="pt-2 border-t border-stone-100 dark:border-white/10 flex items-center justify-between gap-2">

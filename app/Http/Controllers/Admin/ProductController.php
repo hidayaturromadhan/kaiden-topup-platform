@@ -10,6 +10,7 @@ use App\Services\DigiflazzService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -121,6 +122,19 @@ class ProductController extends Controller
             actorId: $user->id
         );
 
+        // Reset cache katalog & beranda seketika
+        Cache::forget('home_default_games');
+        Cache::forget('catalog_default_games');
+        Cache::forget('catalog_default_products');
+        Cache::forget('active_game_categories');
+        Cache::forget('active_game_publishers');
+        Cache::forget('active_games_total_count');
+        Cache::forget('active_products_total_count');
+        if ($product->game) {
+            Cache::forget("order_game_{$product->game->slug}");
+            Cache::forget("order_game_products_{$product->game->slug}");
+        }
+
         $successMsg = "Harga produk '{$product->name}' berhasil diperbarui. Margin untung: +Rp " . number_format($product->margin, 0, ',', '.') . " (" . $product->margin_percent . "%)";
         if ($product->has_discount) {
             $successMsg .= " | Promo Diskon {$product->discount_percent}% aktif (Hemat Rp " . number_format($product->discount_amount, 0, ',', '.') . ")";
@@ -154,6 +168,20 @@ class ProductController extends Controller
         );
 
         $statusText = $product->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        // Reset cache katalog & beranda seketika
+        Cache::forget('home_default_games');
+        Cache::forget('catalog_default_games');
+        Cache::forget('catalog_default_products');
+        Cache::forget('active_game_categories');
+        Cache::forget('active_game_publishers');
+        Cache::forget('active_games_total_count');
+        Cache::forget('active_products_total_count');
+        if ($product->game) {
+            Cache::forget("order_game_{$product->game->slug}");
+            Cache::forget("order_game_products_{$product->game->slug}");
+        }
+
         return back()->with('success', "Status produk '{$product->name}' berhasil {$statusText}.");
     }
 
@@ -174,6 +202,112 @@ class ProductController extends Controller
         }
 
         return back()->with('success', $result['message']);
+    }
+
+    /**
+     * Memperbarui gambar poster, banner header, dan metadata Game (permission: produk.ubah & audit log)
+     */
+    public function updateGameImage(Request $request, Game $game)
+    {
+        $user = Auth::user();
+        if (!$user->hasPermission('produk.ubah')) {
+            abort(403, 'Akses ditolak: Anda tidak memiliki izin produk.ubah.');
+        }
+
+        $validated = $request->validate([
+            'thumbnail_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'banner_file'    => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'preset_image'   => ['nullable', 'string', 'max:255'],
+            'publisher'      => ['nullable', 'string', 'max:100'],
+            'category'       => ['nullable', 'string', 'max:100'],
+        ], [
+            'thumbnail_file.image' => 'File thumbnail poster harus berupa file gambar valid.',
+            'thumbnail_file.mimes' => 'Format gambar yang diperbolehkan: JPEG, PNG, JPG, WEBP.',
+            'thumbnail_file.max'   => 'Ukuran file gambar poster maksimal 4 MB.',
+            'banner_file.image'    => 'File banner header harus berupa file gambar valid.',
+            'banner_file.mimes'    => 'Format banner yang diperbolehkan: JPEG, PNG, JPG, WEBP.',
+            'banner_file.max'      => 'Ukuran file banner header maksimal 4 MB.',
+        ]);
+
+        $oldThumbnail = $game->thumbnail;
+        $oldBanner = $game->banner_image;
+
+        $targetDir = public_path('images/games');
+        if (!file_exists($targetDir)) {
+            @mkdir($targetDir, 0755, true);
+        }
+
+        // 1. Upload Thumbnail Poster Baru
+        if ($request->hasFile('thumbnail_file')) {
+            $file = $request->file('thumbnail_file');
+            $filename = 'game_' . $game->slug . '_' . time() . '_' . Str::random(6) . '.' . $file->getClientOriginalExtension();
+            $file->move($targetDir, $filename);
+
+            // Hapus file custom lama jika tersimpan di images/games
+            if ($oldThumbnail && str_starts_with($oldThumbnail, 'images/games/') && file_exists(public_path($oldThumbnail))) {
+                @unlink(public_path($oldThumbnail));
+            }
+
+            $game->thumbnail = 'images/games/' . $filename;
+        } elseif (!empty($validated['preset_image'])) {
+            $game->thumbnail = $validated['preset_image'];
+        }
+
+        // 2. Upload Banner Header Baru (Opsional)
+        if ($request->hasFile('banner_file')) {
+            $bFile = $request->file('banner_file');
+            $bFilename = 'banner_' . $game->slug . '_' . time() . '_' . Str::random(6) . '.' . $bFile->getClientOriginalExtension();
+            $bFile->move($targetDir, $bFilename);
+
+            if ($oldBanner && str_starts_with($oldBanner, 'images/games/') && file_exists(public_path($oldBanner))) {
+                @unlink(public_path($oldBanner));
+            }
+
+            $game->banner_image = 'images/games/' . $bFilename;
+        }
+
+        // 3. Metadata Tambahan
+        if ($request->filled('publisher')) {
+            $game->publisher = trim($validated['publisher']);
+        }
+        if ($request->filled('category')) {
+            $game->category = trim($validated['category']);
+        }
+
+        $game->save();
+
+        // 4. Catat Audit Log sesuai RULES.md Section 4.C
+        AuditLog::record(
+            action: 'produk.ubah',
+            targetType: 'Game',
+            targetId: $game->id,
+            oldValues: [
+                'game_name'    => $game->name,
+                'thumbnail'    => $oldThumbnail,
+                'banner_image' => $oldBanner,
+            ],
+            newValues: [
+                'game_name'    => $game->name,
+                'thumbnail'    => $game->thumbnail,
+                'banner_image' => $game->banner_image,
+                'publisher'    => $game->publisher,
+                'category'     => $game->category,
+            ],
+            actorId: $user->id
+        );
+
+        // 5. Invalidate Seluruh Cache Terkait Katalog, Beranda, & Detail Game
+        Cache::forget('home_default_games');
+        Cache::forget('catalog_default_games');
+        Cache::forget('catalog_default_products');
+        Cache::forget('active_game_categories');
+        Cache::forget('active_game_publishers');
+        Cache::forget('admin_games_dropdown');
+        Cache::forget('active_games_total_count');
+        Cache::forget("order_game_{$game->slug}");
+        Cache::forget("order_game_products_{$game->slug}");
+
+        return back()->with('success', "Gambar poster & data game '{$game->name}' berhasil diperbarui dan diterapkan ke seluruh katalog.");
     }
 }
 

@@ -121,14 +121,23 @@
                         <div id="ign-result-box" class="hidden mt-3 p-3.5 rounded-xl text-xs transition"></div>
 
                         <!-- Fallback Checkbox (RULES.md Section 5.A.3) -->
-                        <div id="manual-fallback-box" class="hidden mt-3 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-2">
+                        <div id="manual-fallback-box" class="hidden mt-3 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-3">
                             <div class="font-semibold flex items-center space-x-1.5 text-amber-800 dark:text-amber-300">
                                 <x-icon name="alert-triangle" class="w-4 h-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                                <span>Pemeriksaan Nickname Otomatis Tidak Tersedia</span>
+                                <span id="manual-fallback-title">Pemeriksaan Nickname Otomatis Dialihkan</span>
                             </div>
-                            <p class="text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
+                            <p id="manual-fallback-desc" class="text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
                                 Pengecekan server game sedang mengalami kendala atau tidak merespons. Anda tetap dapat melanjutkan transaksi dengan memastikan ID sudah tepat.
                             </p>
+
+                            <!-- Input Nickname Tambahan (Opsional / Konfirmasi Mandiri) -->
+                            <div class="pt-1 space-y-1.5">
+                                <label for="custom_nickname_input" class="block font-semibold text-amber-950 dark:text-amber-200">
+                                    Nama / Nickname Akun Game:
+                                </label>
+                                <input type="text" id="custom_nickname_input" placeholder="Masukkan nickname game Anda (contoh: Muezza)" class="w-full px-3.5 py-2 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-white dark:bg-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 focus:border-[#6D0808]">
+                            </div>
+
                             <label class="flex items-start space-x-2 pt-1 cursor-pointer">
                                 <input type="checkbox" name="manual_confirmation" id="manual_confirmation" value="1" class="mt-0.5 rounded border-amber-400 text-[#6D0808] focus:ring-[#6D0808]">
                                 <span class="font-medium text-amber-950 dark:text-amber-200">Saya menyatakan bahwa User ID yang saya masukkan sudah benar dan siap menanggung risiko kesalahan input.</span>
@@ -279,6 +288,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fallbackBox = document.getElementById('manual-fallback-box');
     const confirmedNickInput = document.getElementById('confirmed_nickname');
     const manualCheckbox = document.getElementById('manual_confirmation');
+    const customNickInput = document.getElementById('custom_nickname_input');
 
     const summaryProduct = document.getElementById('summary-product-name');
     const summaryUserId = document.getElementById('summary-user-id');
@@ -289,8 +299,23 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedPrice = 0;
     let isIgnVerified = false;
 
+    // Deteksi jika user menempelkan ID beserta Nickname, misal "52508939753 (Muezza)"
+    function sanitizeUserIdInput() {
+        let val = inputUserId.value.trim();
+        const matchWithNick = val.match(/^(\d{5,15})\s*[\(\[\{\-_/]\s*([a-zA-Z0-9_\-\.\s]+)\s*[\)\]\}]?$/);
+        if (matchWithNick) {
+            inputUserId.value = matchWithNick[1];
+            if (customNickInput && !customNickInput.value) {
+                customNickInput.value = matchWithNick[2].trim();
+                confirmedNickInput.value = matchWithNick[2].trim();
+                summaryNickname.textContent = matchWithNick[2].trim() + ' (Konfirmasi Mandiri)';
+            }
+        }
+    }
+
     // Update Ringkasan ID
     function updateUserIdSummary() {
+        sanitizeUserIdInput();
         const uid = inputUserId.value.trim();
         const zid = inputZoneId ? inputZoneId.value.trim() : '';
         if (uid) {
@@ -301,20 +326,48 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     inputUserId.addEventListener('input', updateUserIdSummary);
+    inputUserId.addEventListener('change', updateUserIdSummary);
     if (inputZoneId) {
         inputZoneId.addEventListener('input', updateUserIdSummary);
+    }
+
+    if (customNickInput) {
+        customNickInput.addEventListener('input', function () {
+            if (!isIgnVerified) {
+                const val = this.value.trim();
+                if (val) {
+                    confirmedNickInput.value = val;
+                    summaryNickname.textContent = val + ' (Konfirmasi Mandiri)';
+                    if (manualCheckbox) {
+                        manualCheckbox.checked = true;
+                    }
+                } else {
+                    const uid = inputUserId.value.trim();
+                    confirmedNickInput.value = 'Konfirmasi Manual';
+                    summaryNickname.textContent = uid ? 'Konfirmasi Manual (' + uid + ')' : 'Konfirmasi Manual';
+                }
+            }
+        });
     }
 
     if (manualCheckbox) {
         manualCheckbox.addEventListener('change', function () {
             if (this.checked && !isIgnVerified) {
-                const uid = inputUserId.value.trim();
-                summaryNickname.textContent = uid ? 'Konfirmasi Manual (' + uid + ')' : 'Konfirmasi Manual';
+                const customVal = customNickInput ? customNickInput.value.trim() : '';
+                if (customVal) {
+                    confirmedNickInput.value = customVal;
+                    summaryNickname.textContent = customVal + ' (Konfirmasi Mandiri)';
+                } else {
+                    const uid = inputUserId.value.trim();
+                    summaryNickname.textContent = uid ? 'Konfirmasi Manual (' + uid + ')' : 'Konfirmasi Manual';
+                    confirmedNickInput.value = 'Konfirmasi Manual';
+                }
                 if (window.kaidenToast) {
                     window.kaidenToast.info('Konfirmasi ID manual dipilih. Anda dapat langsung memilih nominal produk dan melanjutkan pemesanan.');
                 }
             } else if (!this.checked && !isIgnVerified) {
                 summaryNickname.textContent = 'Menunggu Konfirmasi Manual';
+                confirmedNickInput.value = '';
             }
         });
     }
@@ -375,6 +428,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 isIgnVerified = true;
                 confirmedNickInput.value = data.nickname;
                 summaryNickname.textContent = data.nickname;
+                if (customNickInput) {
+                    customNickInput.value = data.nickname;
+                }
+                if (manualCheckbox) {
+                    manualCheckbox.checked = false;
+                }
+                fallbackBox.classList.add('hidden');
 
                 if (window.kaidenToast) {
                     window.kaidenToast.success('Nickname terverifikasi: ' + data.nickname);
@@ -430,17 +490,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     resultBox.classList.remove('hidden');
                 }
-                // Jika server game mengalami kendala jaringan / antrean / timeout / feature disabled (RULES.md Section 5.A.3)
+                // Jika server game mengalami kendala jaringan / antrean / timeout / feature disabled / belum didukung (RULES.md Section 5.A.3)
                 else if (data.is_error || data.feature_disabled) {
                     if (window.kaidenToast) {
                         window.kaidenToast.info(errorMsg);
                     }
                     resultBox.classList.add('hidden');
                     fallbackBox.classList.remove('hidden');
+                    const descEl = document.getElementById('manual-fallback-desc');
+                    if (descEl && errorMsg) {
+                        descEl.textContent = errorMsg;
+                    }
                     if (manualCheckbox) {
                         manualCheckbox.checked = true;
                     }
-                    summaryNickname.textContent = 'Konfirmasi Manual (' + userId + ')';
+                    const customVal = customNickInput ? customNickInput.value.trim() : '';
+                    if (customVal) {
+                        confirmedNickInput.value = customVal;
+                        summaryNickname.textContent = customVal + ' (Konfirmasi Mandiri)';
+                    } else {
+                        confirmedNickInput.value = 'Konfirmasi Manual';
+                        summaryNickname.textContent = 'Konfirmasi Manual (' + userId + ')';
+                    }
                 }
                 // Jika ID eksplisit diverifikasi tidak ditemukan pada server game
                 else {

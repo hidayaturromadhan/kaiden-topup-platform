@@ -399,16 +399,93 @@
                     <span>Lihat Semua Katalog</span>
                     <x-icon name="chevron-right" class="w-3.5 h-3.5" />
                 </a>
+
+                <!-- Navigasi Geser Carousel Kiri & Kanan di Header (Bebas Bug Overlap) -->
+                <div class="flex items-center space-x-1 shrink-0">
+                    <button type="button" 
+                            id="btn-header-prev" 
+                            onclick="scrollKatalogGrid(-1)" 
+                            class="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 border border-stone-200 dark:border-white/10 text-stone-700 dark:text-zinc-200 hover:bg-[#6D0808] hover:text-white dark:hover:bg-rose-900/50 hover:border-[#6D0808] flex items-center justify-center transition shadow-2xs cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-stone-700 dark:disabled:hover:bg-zinc-800"
+                            title="Geser ke Kiri">
+                        <x-icon name="chevron-left" class="w-4 h-4" />
+                    </button>
+                    <button type="button" 
+                            id="btn-header-next" 
+                            onclick="scrollKatalogGrid(1)" 
+                            class="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 border border-stone-200 dark:border-white/10 text-stone-700 dark:text-zinc-200 hover:bg-[#6D0808] hover:text-white dark:hover:bg-rose-900/50 hover:border-[#6D0808] flex items-center justify-center transition shadow-2xs cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-stone-700 dark:disabled:hover:bg-zinc-800"
+                            title="Geser ke Kanan">
+                        <x-icon name="chevron-right" class="w-4 h-4" />
+                    </button>
+                </div>
             </div>
         </div>
+
+        <!-- STYLE MURNI CAROUSEL 1 BARIS (Bebas Ketergantungan Kompilasi CSS Vite) -->
+        <style>
+            #katalog-grid-container {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+            }
+            #katalog-grid-container::-webkit-scrollbar,
+            #home-games-skeleton::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+            #home-games-skeleton {
+                display: none !important;
+            }
+            #home-games-skeleton:not(.hidden) {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                overflow: hidden !important;
+            }
+            #katalog-grid-container.hidden {
+                display: none !important;
+            }
+            .home-game-card, .home-skeleton-card {
+                flex: 0 0 calc((100% - 64px) / 5) !important;
+                width: calc((100% - 64px) / 5) !important;
+                min-width: 190px !important;
+                max-width: 235px !important;
+            }
+            @media (max-width: 1200px) {
+                .home-game-card, .home-skeleton-card {
+                    flex: 0 0 calc((100% - 48px) / 4) !important;
+                    width: calc((100% - 48px) / 4) !important;
+                    min-width: 175px !important;
+                }
+            }
+            @media (max-width: 900px) {
+                .home-game-card, .home-skeleton-card {
+                    flex: 0 0 calc((100% - 32px) / 3) !important;
+                    width: calc((100% - 32px) / 3) !important;
+                    min-width: 165px !important;
+                }
+            }
+            @media (max-width: 640px) {
+                .home-game-card, .home-skeleton-card {
+                    flex: 0 0 155px !important;
+                    width: 155px !important;
+                    min-width: 155px !important;
+                    max-width: 155px !important;
+                }
+            }
+        </style>
 
         <!-- WHITE DECK CONTAINER (Persis Wadah Kartu Itemku dengan Skeleton Web Render) -->
         <div class="relative rounded-2xl border border-stone-200/90 dark:border-white/10 bg-white dark:bg-[#141416] p-3.5 sm:p-5 shadow-xs">
             
-            <!-- Skeleton Web Render for Home Games (5 Cards Pulse Animation) -->
-            <div id="home-games-skeleton" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-hidden animate-pulse" aria-hidden="true">
+            <!-- Skeleton Web Render for Home Games -->
+            <div id="home-games-skeleton" class="hidden flex flex-nowrap gap-3 sm:gap-4 overflow-hidden animate-pulse" aria-hidden="true">
                 @for($i = 0; $i < 5; $i++)
-                    <div class="flex flex-col rounded-xl bg-white dark:bg-[#1C1C20] border border-stone-200/80 dark:border-white/10 overflow-hidden shadow-xs">
+                    <div class="home-skeleton-card shrink-0 flex flex-col rounded-xl bg-white dark:bg-[#1C1C20] border border-stone-200/80 dark:border-white/10 overflow-hidden shadow-xs">
                         <div class="relative w-full aspect-[4/5] bg-stone-200/90 dark:bg-zinc-800/90">
                             <div class="absolute bottom-0 inset-x-0 h-5 bg-stone-300 dark:bg-zinc-700"></div>
                         </div>
@@ -424,14 +501,13 @@
                 @endfor
             </div>
             
-            <div id="katalog-grid-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto scroll-smooth">
+            <div id="katalog-grid-container" class="flex flex-nowrap gap-3 sm:gap-4 overflow-x-auto pb-1">
                 @include('home.partials.games_grid')
             </div>
 
-            <!-- Circular Nav Arrow di Kanan (Persis Itemku) -->
-            <button type="button" onclick="document.getElementById('katalog-grid-container').scrollBy({ left: 320, behavior: 'smooth' })" class="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-stone-300 dark:border-zinc-700 shadow-md items-center justify-center text-[#212121] dark:text-zinc-200 hover:bg-stone-50 dark:hover:bg-zinc-700 z-20 cursor-pointer transition hover:scale-105" title="Geser Koleksi">
-                <x-icon name="chevron-right" class="w-4 h-4" />
-            </button>
+        </div>
+
+        </div>
 
         </div>
     </div>
@@ -761,12 +837,120 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             skeleton.classList.add('hidden');
             gridContainer.classList.remove('hidden');
+            setTimeout(updateKatalogArrows, 100);
         })
         .catch(() => {
             skeleton.classList.add('hidden');
             gridContainer.classList.remove('hidden');
         });
     };
+
+    // Horizontal Scroll & Drag Handler for Katalog Grid (Physics-Based Smooth Animation)
+    const katalogGrid = document.getElementById('katalog-grid-container');
+    const btnHeaderPrev = document.getElementById('btn-header-prev');
+    const btnHeaderNext = document.getElementById('btn-header-next');
+
+    let scrollAnimId = null;
+
+    function smoothScrollTo(element, targetX, duration = 400) {
+        if (!element) return;
+        if (scrollAnimId) cancelAnimationFrame(scrollAnimId);
+
+        const startX = element.scrollLeft;
+        const distance = targetX - startX;
+        if (Math.abs(distance) < 2) return;
+
+        const startTime = performance.now();
+
+        function animate(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic deceleration
+            const ease = 1 - Math.pow(1 - progress, 3);
+            element.scrollLeft = startX + (distance * ease);
+
+            if (progress < 1) {
+                scrollAnimId = requestAnimationFrame(animate);
+            } else {
+                scrollAnimId = null;
+                updateKatalogArrows();
+            }
+        }
+        scrollAnimId = requestAnimationFrame(animate);
+    }
+
+    window.scrollKatalogGrid = function(direction) {
+        if (!katalogGrid) return;
+        const firstCard = katalogGrid.querySelector('.home-game-card');
+        const cardWidth = firstCard ? (firstCard.offsetWidth + 16) : 220;
+        // Geser sejauh 2-3 kartu per klik
+        const scrollAmount = cardWidth * 2.5 * direction;
+        const maxScroll = Math.max(0, katalogGrid.scrollWidth - katalogGrid.clientWidth);
+        const targetX = Math.max(0, Math.min(maxScroll, katalogGrid.scrollLeft + scrollAmount));
+        
+        smoothScrollTo(katalogGrid, targetX, 400);
+    };
+
+    function updateKatalogArrows() {
+        if (!katalogGrid) return;
+        const scrollLeft = katalogGrid.scrollLeft;
+        const maxScroll = Math.max(0, katalogGrid.scrollWidth - katalogGrid.clientWidth - 8);
+
+        if (btnHeaderPrev) {
+            btnHeaderPrev.disabled = (scrollLeft <= 5);
+        }
+        if (btnHeaderNext) {
+            btnHeaderNext.disabled = (scrollLeft >= maxScroll || maxScroll <= 0);
+        }
+    }
+
+    if (katalogGrid) {
+        katalogGrid.addEventListener('scroll', updateKatalogArrows, { passive: true });
+        window.addEventListener('resize', updateKatalogArrows, { passive: true });
+        setTimeout(updateKatalogArrows, 200);
+
+        // Mouse Drag-to-Scroll Support
+        let isDown = false;
+        let startX = 0;
+        let scrollStart = 0;
+        let hasMoved = false;
+
+        katalogGrid.addEventListener('mousedown', (e) => {
+            if (scrollAnimId) cancelAnimationFrame(scrollAnimId);
+            isDown = true;
+            hasMoved = false;
+            startX = e.pageX - katalogGrid.offsetLeft;
+            scrollStart = katalogGrid.scrollLeft;
+            katalogGrid.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!isDown) return;
+            isDown = false;
+            katalogGrid.style.cursor = '';
+            updateKatalogArrows();
+        });
+
+        katalogGrid.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            const x = e.pageX - katalogGrid.offsetLeft;
+            const walk = (x - startX) * 1.25;
+            if (Math.abs(walk) > 6) {
+                hasMoved = true;
+            }
+            katalogGrid.scrollLeft = scrollStart - walk;
+            updateKatalogArrows();
+        });
+
+        // Mencegah trigger klik pada link kartu saat user sedang menggeser (drag)
+        katalogGrid.addEventListener('click', (e) => {
+            if (hasMoved) {
+                e.preventDefault();
+                e.stopPropagation();
+                hasMoved = false;
+            }
+        }, true);
+    }
 });
 </script>
 @endpush

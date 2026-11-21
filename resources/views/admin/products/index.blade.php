@@ -90,16 +90,26 @@
             @endif
         </form>
 
-        <!-- Tombol Sinkronisasi Digiflazz (produk.sinkron) -->
-        @if(auth()->user()->hasPermission('produk.sinkron'))
-            <form action="{{ route('admin.products.sync') }}" method="POST" id="sync-digiflazz-form">
-                @csrf
-                <button type="button" onclick="confirmSyncDigiflazz()" class="w-full lg:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#6D0808] hover:bg-[#540606] transition shadow-xs cursor-pointer">
-                    <x-icon name="refresh" class="w-4 h-4" />
-                    <span>Tarik Data Digiflazz (API Sync)</span>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- Tombol Kelola Gambar Game -->
+            @if(auth()->user()->hasPermission('produk.ubah'))
+                <button type="button" onclick="openAllGamesModal()" class="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#212121] bg-stone-100 hover:bg-stone-200 border border-[#212121]/15 transition shadow-2xs cursor-pointer">
+                    <x-icon name="image" class="w-4 h-4 text-[#6D0808]" />
+                    <span>Kelola Gambar Game</span>
                 </button>
-            </form>
-        @endif
+            @endif
+
+            <!-- Tombol Sinkronisasi Digiflazz (produk.sinkron) -->
+            @if(auth()->user()->hasPermission('produk.sinkron'))
+                <form action="{{ route('admin.products.sync') }}" method="POST" id="sync-digiflazz-form">
+                    @csrf
+                    <button type="button" onclick="confirmSyncDigiflazz()" class="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#6D0808] hover:bg-[#540606] transition shadow-xs cursor-pointer">
+                        <x-icon name="refresh" class="w-4 h-4" />
+                        <span>Tarik Data Digiflazz (API Sync)</span>
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 
     <!-- Table of Products -->
@@ -127,12 +137,31 @@
                         <tr class="hover:bg-[#F9F8F6]/60 transition">
                             <!-- 1. Game & Kategori -->
                             <td class="py-3.5 px-4 font-semibold text-[#212121]">
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-7 h-9 rounded bg-stone-100 overflow-hidden shrink-0 border border-[#212121]/10">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="relative group w-8 h-10 rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-[#212121]/10 cursor-pointer shadow-2xs"
+                                         @if(auth()->user()->hasPermission('produk.ubah'))
+                                             onclick="openEditGameImageModal({{ $prod->game->id }}, '{{ addslashes($prod->game->name) }}', '{{ asset($prod->game->thumbnail ?? 'images/bg/1.jpg') }}', '{{ asset($prod->game->banner_image ?? '') }}', '{{ addslashes($prod->game->publisher ?? '') }}', '{{ addslashes($prod->game->category ?? '') }}')"
+                                             title="Klik untuk ubah poster game {{ $prod->game->name }}"
+                                         @endif>
                                         <img src="{{ asset($prod->game->thumbnail ?? 'images/bg/1.jpg') }}" alt="{{ $prod->game->name }}" class="w-full h-full object-cover">
+                                        @if(auth()->user()->hasPermission('produk.ubah'))
+                                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                                <x-icon name="edit" class="w-3.5 h-3.5" />
+                                            </div>
+                                        @endif
                                     </div>
                                     <div>
-                                        <div class="font-bold text-[#212121]">{{ $prod->game->name }}</div>
+                                        <div class="font-bold text-[#212121] flex items-center gap-1.5">
+                                            <span>{{ $prod->game->name }}</span>
+                                            @if(auth()->user()->hasPermission('produk.ubah'))
+                                                <button type="button" 
+                                                        onclick="openEditGameImageModal({{ $prod->game->id }}, '{{ addslashes($prod->game->name) }}', '{{ asset($prod->game->thumbnail ?? 'images/bg/1.jpg') }}', '{{ asset($prod->game->banner_image ?? '') }}', '{{ addslashes($prod->game->publisher ?? '') }}', '{{ addslashes($prod->game->category ?? '') }}')"
+                                                        class="text-stone-400 hover:text-[#6D0808] transition p-0.5 rounded hover:bg-stone-100" 
+                                                        title="Ubah Poster & Gambar {{ $prod->game->name }}">
+                                                    <x-icon name="image" class="w-3.5 h-3.5" />
+                                                </button>
+                                            @endif
+                                        </div>
                                         <span class="text-[10px] text-[#212121]/50 uppercase font-mono">{{ $prod->category ?? 'Top Up' }}</span>
                                     </div>
                                 </div>
@@ -408,6 +437,153 @@
     </div>
 </div>
 
+<!-- Modal Kelola / Upload Gambar Game & Poster -->
+<div id="game-image-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs hidden transition-all duration-200">
+    <div id="game-image-modal-box" class="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#212121]/10 overflow-hidden transform scale-95 opacity-0 transition-all duration-200">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 bg-[#F9F8F6] border-b border-[#212121]/10 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-[#6D0808]/10 text-[#6D0808] flex items-center justify-center shrink-0">
+                    <x-icon name="image" class="w-4 h-4" />
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-[#212121]">Kelola Gambar & Poster Game</h3>
+                    <p class="text-[11px] text-[#212121]/60 font-medium" id="modal-game-title">Nama Game</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditGameImageModal()" class="w-7 h-7 rounded-lg text-[#212121]/50 hover:text-[#212121] hover:bg-stone-200/50 flex items-center justify-center transition">
+                <x-icon name="x" class="w-4 h-4" />
+            </button>
+        </div>
+
+        <!-- Modal Form -->
+        <form id="game-image-form" action="" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
+            @csrf
+
+            <!-- Preview Gambar Poster Saat Ini & File Upload -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-[#212121]">
+                    Thumbnail Poster Game
+                    <span class="text-[10px] font-normal text-[#212121]/60 block mt-0.5">Gambar ini akan tampil pada katalog game, beranda, dan halaman order pelanggan.</span>
+                </label>
+
+                <div class="flex items-start gap-4 p-3.5 rounded-2xl bg-[#F9F8F6] border border-[#212121]/10">
+                    <!-- Preview Box -->
+                    <div class="w-20 h-28 rounded-xl bg-stone-200 overflow-hidden shrink-0 border border-[#212121]/15 shadow-xs relative">
+                        <img id="modal-thumb-preview" src="{{ asset('images/bg/1.jpg') }}" alt="Preview" class="w-full h-full object-cover">
+                        <span class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1 py-0.5 rounded font-mono">Preview</span>
+                    </div>
+
+                    <!-- File Input & Upload -->
+                    <div class="flex-1 space-y-2">
+                        <div class="space-y-1">
+                            <input type="file" name="thumbnail_file" id="modal-input-thumb" accept="image/png,image/jpeg,image/webp,image/jpg" onchange="previewThumbnail(this)" class="block w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#6D0808] file:text-white hover:file:bg-[#540606] file:cursor-pointer transition">
+                            <p class="text-[10px] text-stone-500">Format: JPG, PNG, WEBP. Maksimal 4 MB.</p>
+                        </div>
+
+                        <!-- Atau Preset Pilihan Cepat -->
+                        <div class="pt-2 border-t border-[#212121]/5">
+                            <span class="text-[10px] font-semibold text-[#212121]/70 block mb-1.5">Atau pilih Preset Gambar Bawaan:</span>
+                            <input type="hidden" name="preset_image" id="modal-input-preset" value="">
+                            <div class="grid grid-cols-4 gap-1.5">
+                                <button type="button" onclick="selectPresetImage('images/bg/aspirant.jpg')" class="group relative rounded-lg overflow-hidden h-9 border border-stone-200 hover:border-[#6D0808] focus:ring-2 focus:ring-[#6D0808] transition" title="MLBB Aspirants">
+                                    <img src="{{ asset('images/bg/aspirant.jpg') }}" alt="MLBB" class="w-full h-full object-cover">
+                                </button>
+                                <button type="button" onclick="selectPresetImage('images/bg/freefire.jpg')" class="group relative rounded-lg overflow-hidden h-9 border border-stone-200 hover:border-[#6D0808] focus:ring-2 focus:ring-[#6D0808] transition" title="Free Fire">
+                                    <img src="{{ asset('images/bg/freefire.jpg') }}" alt="Free Fire" class="w-full h-full object-cover">
+                                </button>
+                                <button type="button" onclick="selectPresetImage('images/bg/valorant.jpg')" class="group relative rounded-lg overflow-hidden h-9 border border-stone-200 hover:border-[#6D0808] focus:ring-2 focus:ring-[#6D0808] transition" title="Valorant">
+                                    <img src="{{ asset('images/bg/valorant.jpg') }}" alt="Valorant" class="w-full h-full object-cover">
+                                </button>
+                                <button type="button" onclick="selectPresetImage('images/bg/codm.jpg')" class="group relative rounded-lg overflow-hidden h-9 border border-stone-200 hover:border-[#6D0808] focus:ring-2 focus:ring-[#6D0808] transition" title="CODM">
+                                    <img src="{{ asset('images/bg/codm.jpg') }}" alt="CODM" class="w-full h-full object-cover">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata Tambahan: Publisher & Kategori -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#212121]/10">
+                <div>
+                    <label for="modal-input-publisher" class="block text-[11px] font-bold text-[#212121] mb-1">Publisher Resmi</label>
+                    <input type="text" name="publisher" id="modal-input-publisher" placeholder="Contoh: Moonton, Garena, Riot..." class="w-full px-3 py-2 rounded-xl border border-[#212121]/15 text-xs text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 focus:border-[#6D0808] transition">
+                </div>
+                <div>
+                    <label for="modal-input-category" class="block text-[11px] font-bold text-[#212121] mb-1">Kategori Game</label>
+                    <input type="text" name="category" id="modal-input-category" placeholder="Contoh: Mobile Game, PC Game..." class="w-full px-3 py-2 rounded-xl border border-[#212121]/15 text-xs text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 focus:border-[#6D0808] transition">
+                </div>
+            </div>
+
+            <!-- Modal Footer Buttons -->
+            <div class="pt-3 border-t border-[#212121]/10 flex items-center justify-end space-x-2.5">
+                <button type="button" onclick="closeEditGameImageModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#212121]/70 hover:text-[#212121] bg-stone-100 hover:bg-stone-200 transition">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#6D0808] hover:bg-[#540606] transition shadow-xs flex items-center space-x-1.5">
+                    <x-icon name="check" class="w-4 h-4" />
+                    <span>Simpan Gambar Game</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Galeri Semua Game (Batch Game Image Management) -->
+<div id="all-games-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs hidden transition-all duration-200">
+    <div id="all-games-modal-box" class="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-[#212121]/10 overflow-hidden transform scale-95 opacity-0 transition-all duration-200 max-h-[90vh] flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-4 bg-[#F9F8F6] border-b border-[#212121]/10 flex items-center justify-between shrink-0">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-[#6D0808]/10 text-[#6D0808] flex items-center justify-center shrink-0">
+                    <x-icon name="image" class="w-4 h-4" />
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-[#212121]">Daftar Poster & Gambar Game</h3>
+                    <p class="text-[11px] text-[#212121]/60 font-medium">Klik pada poster atau tombol "Ubah Gambar" untuk mengganti gambar game</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeAllGamesModal()" class="w-7 h-7 rounded-lg text-[#212121]/50 hover:text-[#212121] hover:bg-stone-200/50 flex items-center justify-center transition">
+                <x-icon name="x" class="w-4 h-4" />
+            </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="px-6 py-3 border-b border-[#212121]/10 bg-white shrink-0">
+            <div class="relative">
+                <input type="text" id="game-gallery-search" oninput="filterGalleryGames(this.value)" placeholder="Cari nama game..." class="w-full pl-9 pr-3.5 py-2 rounded-xl border border-[#212121]/15 text-xs text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#6D0808]/20 focus:border-[#6D0808]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#212121]/40">
+                    <x-icon name="search" class="w-3.5 h-3.5" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="p-6 overflow-y-auto">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5" id="gallery-games-list">
+                @foreach($games as $gm)
+                    <div class="gallery-game-item p-3 rounded-2xl border border-stone-200 hover:border-[#6D0808]/40 hover:shadow-xs transition bg-[#F9F8F6]/40 flex flex-col items-center text-center group" data-name="{{ strtolower($gm->name) }}">
+                        <div class="w-16 h-22 rounded-xl overflow-hidden bg-stone-200 border border-[#212121]/10 relative shrink-0 shadow-2xs">
+                            <img src="{{ asset($gm->thumbnail ?? 'images/bg/1.jpg') }}" alt="{{ $gm->name }}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="mt-2.5 w-full">
+                            <h4 class="text-xs font-bold text-[#212121] truncate" title="{{ $gm->name }}">{{ $gm->name }}</h4>
+                            <p class="text-[10px] text-[#212121]/50 truncate">{{ $gm->publisher ?? 'Publisher Resmi' }}</p>
+                        </div>
+                        <button type="button" 
+                                onclick="openEditGameImageModal({{ $gm->id }}, '{{ addslashes($gm->name) }}', '{{ asset($gm->thumbnail ?? 'images/bg/1.jpg') }}', '{{ asset($gm->banner_image ?? '') }}', '{{ addslashes($gm->publisher ?? '') }}', '{{ addslashes($gm->category ?? '') }}'); closeAllGamesModal();"
+                                class="mt-2.5 w-full py-1.5 px-2 rounded-lg text-[11px] font-semibold text-white bg-[#6D0808] hover:bg-[#540606] transition flex items-center justify-center space-x-1 shadow-2xs cursor-pointer">
+                            <x-icon name="edit" class="w-3 h-3" />
+                            <span>Ubah Gambar</span>
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     let currentModalProduct = null;
@@ -560,6 +736,8 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closePricingModal();
+            closeEditGameImageModal();
+            closeAllGamesModal();
         }
     });
 
@@ -569,6 +747,108 @@
             closePricingModal();
         }
     });
+
+    document.getElementById('game-image-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEditGameImageModal();
+        }
+    });
+
+    document.getElementById('all-games-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAllGamesModal();
+        }
+    });
+
+    // ==========================================
+    // LOGIKA KELOLA GAMBAR GAME & PRODUK
+    // ==========================================
+    function openEditGameImageModal(gameId, gameName, currentThumb, currentBanner, publisher, category) {
+        const modal = document.getElementById('game-image-modal');
+        const modalBox = document.getElementById('game-image-modal-box');
+        const form = document.getElementById('game-image-form');
+
+        form.action = "{{ url('admin/games') }}/" + gameId + "/update-image";
+        document.getElementById('modal-game-title').innerText = gameName;
+        document.getElementById('modal-thumb-preview').src = currentThumb;
+        document.getElementById('modal-input-thumb').value = '';
+        document.getElementById('modal-input-preset').value = '';
+        document.getElementById('modal-input-publisher').value = publisher || '';
+        document.getElementById('modal-input-category').value = category || '';
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modalBox.classList.remove('scale-95', 'opacity-0');
+            modalBox.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeEditGameImageModal() {
+        const modal = document.getElementById('game-image-modal');
+        const modalBox = document.getElementById('game-image-modal-box');
+
+        modalBox.classList.remove('scale-100', 'opacity-100');
+        modalBox.classList.add('scale-95', 'opacity-0');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    function previewThumbnail(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('modal-thumb-preview').src = e.target.result;
+                document.getElementById('modal-input-preset').value = '';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function selectPresetImage(presetPath) {
+        document.getElementById('modal-input-preset').value = presetPath;
+        document.getElementById('modal-input-thumb').value = '';
+        document.getElementById('modal-thumb-preview').src = "{{ asset('') }}" + presetPath;
+    }
+
+    function openAllGamesModal() {
+        const modal = document.getElementById('all-games-modal');
+        const modalBox = document.getElementById('all-games-modal-box');
+        document.getElementById('game-gallery-search').value = '';
+        filterGalleryGames('');
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modalBox.classList.remove('scale-95', 'opacity-0');
+            modalBox.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeAllGamesModal() {
+        const modal = document.getElementById('all-games-modal');
+        const modalBox = document.getElementById('all-games-modal-box');
+
+        modalBox.classList.remove('scale-100', 'opacity-100');
+        modalBox.classList.add('scale-95', 'opacity-0');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    function filterGalleryGames(query) {
+        const q = (query || '').toLowerCase().trim();
+        const items = document.querySelectorAll('.gallery-game-item');
+        items.forEach(item => {
+            const name = item.getAttribute('data-name') || '';
+            if (!q || name.includes(q)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
 </script>
 @endpush
 @endsection

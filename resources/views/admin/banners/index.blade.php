@@ -178,15 +178,17 @@
 
                                 <!-- Tombol Kelola -->
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end space-x-1.5">
-                                        <a href="{{ route('admin.banners.edit', $banner) }}" class="p-1.5 rounded-lg bg-[#212121]/5 hover:bg-[#212121]/10 text-[#212121] border border-[#212121]/10 transition" title="Edit Banner">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <a href="{{ route('admin.banners.edit', $banner) }}" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#212121] text-white hover:bg-[#6D0808] transition shadow-xs" title="Edit Banner">
                                             <x-icon name="edit" class="w-3.5 h-3.5" />
+                                            <span>Edit</span>
                                         </a>
-                                        <form action="{{ route('admin.banners.destroy', $banner) }}" method="POST">
+                                        <form action="{{ route('admin.banners.destroy', $banner) }}" method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" onclick="confirmDeleteBanner(this)" class="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition cursor-pointer" title="Hapus Banner">
+                                            <button type="button" onclick="confirmDeleteBanner(this)" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 hover:border-rose-300 transition cursor-pointer" title="Hapus Banner">
                                                 <x-icon name="trash" class="w-3.5 h-3.5" />
+                                                <span>Hapus</span>
                                             </button>
                                         </form>
                                     </div>

@@ -11,6 +11,7 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class DigiflazzService
 {
@@ -25,20 +26,28 @@ class DigiflazzService
 
     public function getUsername(): string
     {
+        $settingUser = Setting::get('digiflazz_username');
+        if (!empty($settingUser) && $settingUser !== 'kaiden_dev') {
+            return $settingUser;
+        }
         $envUser = env('DIGIFLAZZ_USERNAME');
-        if (!empty($envUser) && $envUser !== 'vakakogkwOjg' && $envUser !== 'kaiden_dev') {
+        if (!empty($envUser) && $envUser !== 'kaiden_dev') {
             return $envUser;
         }
-        return Setting::get('digiflazz_username', config('services.digiflazz.username', $envUser ?: 'kaiden_dev'));
+        return config('services.digiflazz.username', 'kaiden_dev');
     }
 
     public function getApiKey(): string
     {
+        $settingKey = Setting::get('digiflazz_api_key');
+        if (!empty($settingKey) && $settingKey !== 'dev-digiflazz-key') {
+            return $settingKey;
+        }
         $envKey = env('DIGIFLAZZ_API_KEY');
-        if (!empty($envKey) && $envKey !== 'c0ee16ec-5dcd-5939-bb79-e28ccdbcb298' && $envKey !== 'dev-digiflazz-key') {
+        if (!empty($envKey) && $envKey !== 'dev-digiflazz-key') {
             return $envKey;
         }
-        return Setting::get('digiflazz_api_key', config('services.digiflazz.api_key', $envKey ?: 'dev-digiflazz-key'));
+        return config('services.digiflazz.api_key', 'dev-digiflazz-key');
     }
 
     public function getBaseUrl(): string
@@ -373,15 +382,47 @@ class DigiflazzService
             'PUBG MOBILE' => 'pubg-mobile',
             'PUBG' => 'pubg-mobile',
             'GENSHIN IMPACT' => 'genshin-impact',
+            'GENSHIN' => 'genshin-impact',
+            'HONOR OF KINGS' => 'honor-of-kings',
+            'HOK' => 'honor-of-kings',
+            'POINT BLANK' => 'point-blank',
+            'STEAM WALLET' => 'steam-wallet',
+            'STEAM' => 'steam-wallet',
+            'ROBLOX' => 'roblox',
+            'HONKAI STAR RAIL' => 'honkai-star-rail',
+            'HONKAI: STAR RAIL' => 'honkai-star-rail',
+            'RAGNAROK' => 'ragnarok',
+            'BLOOD STRIKE' => 'blood-strike',
+            'EA SPORTS FC MOBILE' => 'fc-mobile',
+            'FC MOBILE' => 'fc-mobile',
+            'FIFA MOBILE' => 'fc-mobile',
         ];
 
         $allGames = Game::all()->keyBy('slug');
         $affectedGameIds = [];
+        $newGamesCount = 0;
 
         foreach ($items as $item) {
             $brandRaw = strtoupper(trim($item['brand'] ?? ''));
             $sku = trim($item['buyer_sku_code'] ?? '');
             if (empty($sku)) {
+                continue;
+            }
+
+            // Filter Ketat Kategori: Hanya izinkan kategori Games / Voucher Game
+            $categoryRaw = strtolower(trim($item['category'] ?? ''));
+            $isGameCategory = str_contains($categoryRaw, 'game') || str_contains($categoryRaw, 'voucher');
+            
+            // Kecualikan eksplisit provider telko dan PPOB non-game
+            $nonGameKeywords = ['pulsa', 'data', 'telkomsel', 'indosat', 'xl', 'tri', 'smartfren', 'axis', 'pln', 'listrik', 'gas', 'pertamina', 'bpjs', 'pdam', 'emoney', 'e-money', 'ovo', 'gopay', 'dana', 'shopeepay', 'linkaja', 'k-vision'];
+            foreach ($nonGameKeywords as $kw) {
+                if (str_contains(strtolower($brandRaw), $kw) || str_contains($categoryRaw, $kw)) {
+                    $isGameCategory = false;
+                    break;
+                }
+            }
+
+            if (!$isGameCategory && !isset($brandMap[$brandRaw])) {
                 continue;
             }
 
@@ -395,6 +436,77 @@ class DigiflazzService
                 $game = Game::where('checker_code', $brandRaw)
                     ->orWhere('name', 'LIKE', "%{$brandRaw}%")
                     ->first();
+            }
+
+            // MEKANISME DINAMIS: Jika game belum terdaftar di sistem KAIDEN,
+            // buatkan entri Game baru secara otomatis agar produk langsung masuk ke katalog!
+            if (!$game && !empty($brandRaw)) {
+                $targetSlug = $brandMap[$brandRaw] ?? Str::slug($brandRaw);
+                $game = Game::where('slug', $targetSlug)->first();
+
+                if (!$game) {
+                    $formattedName = match($brandRaw) {
+                        'PUBG', 'PUBG MOBILE' => 'PUBG Mobile',
+                        'CODM', 'CALL OF DUTY' => 'Call of Duty: Mobile',
+                        'GENSHIN IMPACT', 'GENSHIN' => 'Genshin Impact',
+                        'HONOR OF KINGS', 'HOK' => 'Honor of Kings',
+                        'POINT BLANK' => 'Point Blank',
+                        'STEAM', 'STEAM WALLET' => 'Steam Wallet',
+                        'ROBLOX' => 'Roblox',
+                        'HONKAI STAR RAIL', 'HONKAI: STAR RAIL' => 'Honkai: Star Rail',
+                        'FC MOBILE', 'FIFA MOBILE', 'EA SPORTS FC MOBILE' => 'EA SPORTS FC Mobile',
+                        'BLOOD STRIKE' => 'Blood Strike',
+                        'GROWTOPIA' => 'Growtopia',
+                        default => ucwords(strtolower($brandRaw)),
+                    };
+
+                    $gameCategory = match(true) {
+                        str_contains($brandRaw, 'PUBG') || str_contains($brandRaw, 'FREE FIRE') || str_contains($brandRaw, 'BLOOD') => 'Battle Royale',
+                        str_contains($brandRaw, 'VALORANT') || str_contains($brandRaw, 'DUTY') || str_contains($brandRaw, 'POINT BLANK') => 'FPS',
+                        str_contains($brandRaw, 'LEGEND') || str_contains($brandRaw, 'AOV') || str_contains($brandRaw, 'HONOR') => 'MOBA',
+                        str_contains($brandRaw, 'STEAM') || str_contains($brandRaw, 'GOOGLE') || str_contains($brandRaw, 'VOUCHER') => 'Voucher',
+                        default => 'Online Game',
+                    };
+
+                    $needsZone = (
+                        str_contains($brandRaw, 'MOBILE LEGENDS') || 
+                        str_contains($brandRaw, 'GENSHIN') || 
+                        str_contains($brandRaw, 'LIFEAFTER') ||
+                        str_contains($brandRaw, 'RAGNAROK') ||
+                        str_contains(strtolower($item['product_name'] ?? ''), 'zone') ||
+                        str_contains(strtolower($item['desc'] ?? ''), 'server')
+                    );
+
+                    $publisher = match(true) {
+                        str_contains($brandRaw, 'PUBG') => 'Tencent Games',
+                        str_contains($brandRaw, 'GENSHIN') || str_contains($brandRaw, 'HONKAI') => 'HoYoverse',
+                        str_contains($brandRaw, 'HONOR') => 'Level Infinite',
+                        str_contains($brandRaw, 'STEAM') => 'Valve',
+                        str_contains($brandRaw, 'ROBLOX') => 'Roblox Corp',
+                        str_contains($brandRaw, 'POINT BLANK') => 'Zepetto',
+                        str_contains($brandRaw, 'FC MOBILE') || str_contains($brandRaw, 'FIFA') => 'EA Sports',
+                        str_contains($brandRaw, 'GROWTOPIA') => 'Ubisoft',
+                        default => 'Official Publisher',
+                    };
+
+                    $game = Game::create([
+                        'name' => $formattedName,
+                        'slug' => $targetSlug,
+                        'checker_code' => $brandRaw,
+                        'needs_zone' => $needsZone,
+                        'status' => 'aktif',
+                        'publisher' => $publisher,
+                        'category' => $gameCategory,
+                        'thumbnail' => 'images/bg/1.jpg',
+                        'description' => "Top up {$formattedName} termurah, resmi, dan instan 24 jam.",
+                        'guide_text' => $needsZone 
+                            ? "Masukkan User ID dan Zone/Server ID akun {$formattedName} Anda dengan benar."
+                            : "Masukkan User ID akun {$formattedName} Anda dengan benar.",
+                    ]);
+
+                    $allGames->put($targetSlug, $game);
+                    $newGamesCount++;
+                }
             }
 
             if ($game) {
@@ -469,6 +581,19 @@ class DigiflazzService
             }
         }
 
+        // Nonaktifkan game non-game yang tidak sengaja terdaftar dari sinkronisasi sebelumnya
+        $nonGameSlugs = ['indosat', 'telkomsel', 'xl', 'axis', 'smartfren', 'tri', 'pertamina-gas', 'k-vision-dan-gol', 'aulx'];
+        Game::whereIn('slug', $nonGameSlugs)->update(['status' => 'nonaktif']);
+
+        // Reset cache katalog & beranda agar game dan produk baru langsung tampil secara instan
+        Cache::forget('active_game_categories');
+        Cache::forget('active_game_publishers');
+        Cache::forget('home_default_games');
+        Cache::forget('catalog_default_games');
+        Cache::forget('catalog_default_products');
+        Cache::forget('active_games_total_count');
+        Cache::forget('active_products_total_count');
+
         // Catat Audit Log
         AuditLog::record(
             action: 'produk.sinkron',
@@ -478,16 +603,20 @@ class DigiflazzService
             newValues: [
                 'new_products' => $syncedCount,
                 'updated_products' => $updatedCount,
+                'new_games' => $newGamesCount,
                 'is_cached' => $isFromCache,
             ],
             actorId: auth()->id()
         );
 
+        $gameNote = $newGamesCount > 0 ? " ({$newGamesCount} game baru otomatis didaftarkan)" : "";
+
         return [
             'success' => true,
             'new_products' => $syncedCount,
             'updated_products' => $updatedCount,
-            'message' => "Sinkronisasi berhasil{$rateLimitNote}. {$syncedCount} produk baru ditambahkan, {$updatedCount} produk diperbarui sesuai API Production Digiflazz.",
+            'new_games' => $newGamesCount,
+            'message' => "Sinkronisasi berhasil{$rateLimitNote}. {$syncedCount} produk baru ditambahkan{$gameNote}, {$updatedCount} produk diperbarui sesuai API Production Digiflazz.",
         ];
     }
 }

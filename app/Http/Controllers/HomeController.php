@@ -19,6 +19,7 @@ class HomeController extends Controller
         // Cache daftar kategori aktif selama 1 jam (3600 detik)
         $categories = Cache::remember('active_game_categories', 3600, function () {
             return Game::where('status', 'aktif')
+                ->whereHas('activeProducts')
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category');
@@ -28,6 +29,7 @@ class HomeController extends Controller
         if (empty($search) && (empty($category) || $category === 'Semua')) {
             $games = Cache::remember('home_default_games', 600, function () {
                 return Game::where('status', 'aktif')
+                    ->whereHas('activeProducts')
                     ->withCount('activeProducts')
                     ->withCount(['orders' => function ($q) {
                         $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
@@ -48,6 +50,7 @@ class HomeController extends Controller
             });
         } else {
             $gamesQuery = Game::where('status', 'aktif')
+                ->whereHas('activeProducts')
                 ->withCount('activeProducts')
                 ->withCount(['orders' => function ($q) {
                     $q->whereIn('orders.status', ['SUKSES', 'DIPROSES', 'DIBAYAR']);
