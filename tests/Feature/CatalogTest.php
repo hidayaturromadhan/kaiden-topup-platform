@@ -67,9 +67,49 @@ class CatalogTest extends TestCase
         $response = $this->get(route('guide.index'));
 
         $response->assertStatus(200);
-        $response->assertSee('Panduan Pengisian ID Game');
+        $response->assertSee('Panduan Pengisian ID');
         $response->assertSee('Mobile Legends');
         $response->assertSee('Free Fire');
+    }
+
+    public function test_guide_page_excludes_games_without_active_products()
+    {
+        // 1. Buat game tanpa produk aktif
+        Game::create([
+            'name' => 'Demo Game Kosong',
+            'slug' => 'demo-game-kosong',
+            'category' => 'Game',
+            'publisher' => 'Demo',
+            'status' => 'aktif',
+            'guide_text' => 'Masukkan ID Anda.',
+        ]);
+
+        // 2. Buat produk non-game (seperti Indosat / Pertamina Gas) meskipun memiliki produk aktif
+        $telcoGame = Game::create([
+            'name' => 'Indosat Ooredoo',
+            'slug' => 'indosat',
+            'category' => 'Pulsa & Data',
+            'publisher' => 'Indosat',
+            'status' => 'aktif',
+            'guide_text' => 'Masukkan nomor telepon.',
+        ]);
+        Product::create([
+            'game_id' => $telcoGame->id,
+            'name' => 'Pulsa 10.000',
+            'digiflazz_sku' => 'IND10K',
+            'cost_price' => 10000,
+            'sell_price' => 11000,
+            'original_price' => 11000,
+            'is_active' => true,
+        ]);
+
+        \Illuminate\Support\Facades\Cache::forget('guide_active_games_v2');
+
+        $response = $this->get(route('guide.index'));
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Demo Game Kosong');
+        $response->assertDontSee('Indosat Ooredoo');
     }
 
     public function test_homepage_and_catalog_render_real_sales_and_feedback_without_fake_data()

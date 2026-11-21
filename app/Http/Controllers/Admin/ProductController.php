@@ -126,6 +126,8 @@ class ProductController extends Controller
         Cache::forget('home_default_games');
         Cache::forget('catalog_default_games');
         Cache::forget('catalog_default_products');
+        Cache::forget('guide_active_games');
+        Cache::forget('guide_active_games_v2');
         Cache::forget('active_game_categories');
         Cache::forget('active_game_publishers');
         Cache::forget('active_games_total_count');
@@ -173,6 +175,8 @@ class ProductController extends Controller
         Cache::forget('home_default_games');
         Cache::forget('catalog_default_games');
         Cache::forget('catalog_default_products');
+        Cache::forget('guide_active_games');
+        Cache::forget('guide_active_games_v2');
         Cache::forget('active_game_categories');
         Cache::forget('active_game_publishers');
         Cache::forget('active_games_total_count');
@@ -300,6 +304,8 @@ class ProductController extends Controller
         Cache::forget('home_default_games');
         Cache::forget('catalog_default_games');
         Cache::forget('catalog_default_products');
+        Cache::forget('guide_active_games');
+        Cache::forget('guide_active_games_v2');
         Cache::forget('active_game_categories');
         Cache::forget('active_game_publishers');
         Cache::forget('admin_games_dropdown');

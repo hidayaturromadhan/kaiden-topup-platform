@@ -152,6 +152,7 @@ class Game extends Model
             \Illuminate\Support\Facades\Cache::forget('active_game_publishers');
             \Illuminate\Support\Facades\Cache::forget('admin_games_dropdown');
             \Illuminate\Support\Facades\Cache::forget('guide_active_games');
+            \Illuminate\Support\Facades\Cache::forget('guide_active_games_v2');
             \Illuminate\Support\Facades\Cache::forget('active_games_total_count');
             \Illuminate\Support\Facades\Cache::forget("order_game_{$game->slug}");
         });
@@ -163,6 +164,7 @@ class Game extends Model
             \Illuminate\Support\Facades\Cache::forget('active_game_publishers');
             \Illuminate\Support\Facades\Cache::forget('admin_games_dropdown');
             \Illuminate\Support\Facades\Cache::forget('guide_active_games');
+            \Illuminate\Support\Facades\Cache::forget('guide_active_games_v2');
             \Illuminate\Support\Facades\Cache::forget('active_games_total_count');
             \Illuminate\Support\Facades\Cache::forget("order_game_{$game->slug}");
         });
