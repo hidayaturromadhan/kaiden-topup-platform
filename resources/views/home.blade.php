@@ -506,14 +506,10 @@
             </div>
 
         </div>
-
-        </div>
-
-        </div>
     </div>
 
     <!-- SECTION METODE PEMBAYARAN RESMI (Pengganti 2 Section Sesuai Permintaan User) -->
-    <div id="metode-pembayaran" class="pt-8 border-t border-[#212121]/10 dark:border-white/10 space-y-6">
+    <div id="metode-pembayaran" class="pt-8 pb-4 border-t border-[#212121]/10 dark:border-white/10 space-y-6">
         
         <!-- Header Section: Bersih & Minimalis Sesuai Permintaan User -->
         <div class="text-center max-w-xl mx-auto space-y-1">
@@ -601,9 +597,9 @@
             <a href="https://wa.me/{{ \App\Models\Setting::get('whatsapp_number', env('WHATSAPP_NUMBER', '6281234567890')) }}?text={{ urlencode('Halo Admin KAIDEN, saya butuh bantuan mengenai metode pembayaran.') }}" 
                target="_blank" 
                rel="noopener noreferrer" 
-               class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition shadow-xs shrink-0">
-                <x-icon name="headphones" class="w-4 h-4" />
-                <span>Chat WhatsApp 24/7</span>
+               class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#6D0808] bg-white hover:bg-stone-100 transition shadow-xs shrink-0">
+                <x-icon name="headphones" class="w-4 h-4 text-[#6D0808]" />
+                <span>Chat Customer Care</span>
             </a>
         </div>
 
