@@ -62,17 +62,61 @@ class OrderController extends Controller
     }
 
     /**
-     * Retry Pemenuhan Digiflazz secara manual jika sempat pending / gagal
+     * Retry Pemenuhan Digiflazz secara manual jika sempat pending / gagal / cut-off
+     * Memungkinkan admin memproses ulang pesanan yang gagal setelah pihak seller/supplier normal.
      */
     public function retryFulfillment(Order $order)
     {
-        if (!in_array($order->status, ['DIBAYAR', 'GAGAL', 'DIPROSES'])) {
-            return back()->withErrors(['error' => 'Pesanan tidak memenuhi syarat untuk diproses ulang.']);
+        // Cegah pemrosesan ganda jika pesanan sudah berstatus SUKSES (item sudah diterima)
+        if ($order->status === 'SUKSES') {
+            return back()->with('error', 'Pesanan ini sudah berstatus SUKSES dan item telah berhasil terkirim.');
         }
 
+        // Syarat kelayakan:
+        // 1. Pembayaran Midtrans sukses (settlement, capture, success), ATAU
+        // 2. Status pesanan berada di DIBAYAR, GAGAL, DIPROSES, atau DIBATALKAN (dengan settlement)
+        $isPaymentSettled = $order->payment && in_array(strtolower($order->payment->status), ['settlement', 'capture', 'success']);
+        $isStatusEligible = in_array($order->status, ['DIBAYAR', 'GAGAL', 'DIPROSES']);
+
+        if (!$isPaymentSettled && !$isStatusEligible) {
+            return back()->with('error', 'Pesanan belum terbayar atau tidak memenuhi syarat untuk diproses ulang ke Digiflazz.');
+        }
+
+        $oldStatus = $order->status;
+
+        // Jika pesanan sebelumnya sempat berstatus GAGAL atau DIBATALKAN, reset status menjadi DIBAYAR
+        // agar proses pemenuhan di DigiflazzService dapat dieksekusi tanpa terhalang guard pembatalan
+        if (in_array($order->status, ['GAGAL', 'DIBATALKAN'])) {
+            $order->status = 'DIBAYAR';
+            $order->save();
+        }
+
+        // Eksekusi pemenuhan ke Digiflazz
         $fulfillment = $this->digiflazzService->fulfill($order);
 
-        return back()->with('success', 'Perintah pemenuhan ke Digiflazz berhasil dikirim ulang.');
+        // RULES.md Section 5.C.3: Wajib catat tindakan retry manual ini di audit_logs
+        AuditLog::record(
+            action: 'transaksi.retry_fulfillment',
+            targetType: 'Order',
+            targetId: $order->id,
+            oldValues: ['status' => $oldStatus],
+            newValues: [
+                'status' => $order->status,
+                'fulfillment_id' => $fulfillment->id,
+                'ref_id' => $fulfillment->digiflazz_ref_id,
+                'digiflazz_status' => $fulfillment->status,
+                'summary' => $fulfillment->response_summary,
+            ],
+            actorId: Auth::id()
+        );
+
+        if ($fulfillment->status === 'sukses') {
+            return back()->with('success', 'Pemenuhan Digiflazz BERHASIL! ' . ($fulfillment->response_summary ?: 'Item telah berhasil terkirim ke akun game pelanggan.'));
+        } elseif ($fulfillment->status === 'gagal') {
+            return back()->with('error', 'Pemenuhan Digiflazz GAGAL: ' . ($fulfillment->response_summary ?: 'Ditolak oleh provider seller.'));
+        } else {
+            return back()->with('success', 'Permintaan pemenuhan sedang DIPROSES oleh Digiflazz (Pending). Nomor referensi: ' . $fulfillment->digiflazz_ref_id);
+        }
     }
 
     /**

@@ -96,10 +96,22 @@
                                         {{ $o->status }}
                                     </span>
                                 @endif
+
+                                @if($o->status === 'GAGAL' || ($o->status === 'DIBATALKAN' && in_array(strtolower($o->payment?->status ?? ''), ['settlement', 'capture', 'success'])))
+                                    <div class="mt-1">
+                                        <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-amber-800 bg-amber-100 border border-amber-300">
+                                            <x-icon name="alert-triangle" class="w-2.5 h-2.5 text-amber-600" />
+                                            <span>Butuh Tindak Lanjut</span>
+                                        </span>
+                                    </div>
+                                @endif
                             </td>
                             <td class="py-3.5 px-4 text-right">
-                                <a href="{{ route('admin.orders.show', $o->id) }}" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#6D0808] bg-[#6D0808]/10 hover:bg-[#6D0808]/20 transition">
-                                    <span>Periksa</span>
+                                @php
+                                    $needsAction = $o->status === 'GAGAL' || ($o->status === 'DIBATALKAN' && in_array(strtolower($o->payment?->status ?? ''), ['settlement', 'capture', 'success']));
+                                @endphp
+                                <a href="{{ route('admin.orders.show', $o->id) }}" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold {{ $needsAction ? 'text-white bg-[#6D0808] hover:bg-[#540606] shadow-xs' : 'text-[#6D0808] bg-[#6D0808]/10 hover:bg-[#6D0808]/20' }} transition">
+                                    <span>{{ $needsAction ? 'Tindak Lanjut' : 'Periksa' }}</span>
                                     <x-icon name="chevron-right" class="w-3 h-3" />
                                 </a>
                             </td>

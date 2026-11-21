@@ -113,7 +113,16 @@
 
         <!-- Rekaman Pemenuhan Digiflazz -->
         <div class="p-4 sm:p-6 border-t border-[#212121]/10 bg-[#F9F8F6]/40 space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-[#212121]">Riwayat Pemenuhan Digiflazz (Fulfillments)</h3>
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[#212121]">Riwayat Pemenuhan Digiflazz (Fulfillments)</h3>
+                @if($order->status === 'SUKSES')
+                    <span class="inline-flex items-center space-x-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                        <x-icon name="check-circle" class="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Item Sukses Terkirim</span>
+                    </span>
+                @endif
+            </div>
+
             @if($order->fulfillments->isEmpty())
                 <div class="p-4 rounded-xl bg-white border border-[#212121]/10 text-xs text-[#212121]/50 text-center">
                     Belum ada proses pemenuhan ke Digiflazz (transaksi belum berstatus DIBAYAR).
@@ -136,28 +145,58 @@
                     @endforeach
                 </div>
             @endif
+
+            @php
+                $latestFulfillment = $order->fulfillments->last();
+                $isFailedFulfillment = $latestFulfillment && $latestFulfillment->status === 'gagal';
+                $canRetry = ($order->status !== 'SUKSES') && (
+                    in_array($order->status, ['DIBAYAR', 'DIPROSES', 'GAGAL']) || 
+                    ($order->payment && in_array(strtolower($order->payment->status), ['settlement', 'capture', 'success']))
+                );
+            @endphp
+
+            @if($isFailedFulfillment && $order->status !== 'SUKSES')
+                <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 flex items-start space-x-2.5">
+                    <x-icon name="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div class="space-y-1">
+                        <div class="font-bold">Kendala Pemenuhan Seller: {{ $latestFulfillment->response_summary }}</div>
+                        <p class="text-amber-800 text-[11px] leading-relaxed">
+                            Jika kendala seller/supplier telah selesai (misal: perbaikan sistem seller selesai), Anda dapat menekan tombol <strong>Kirim Ulang ke Digiflazz</strong> di bawah untuk memproses kembali pengiriman item ke akun game pembeli.
+                        </p>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- Panel Tindak Lanjut Admin (Retry & Refund Manual via RULES.md Section 5.C.3) -->
         <div class="p-4 sm:p-6 border-t border-[#212121]/10 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <div class="text-xs text-[#212121]/60">
-                Aksi penanganan kegagalan atau pemenuhan ulang:
+                @if($canRetry)
+                    Aksi penanganan kegagalan atau pemenuhan ulang produk:
+                @elseif($order->status === 'SUKSES')
+                    <span class="text-emerald-700 font-semibold flex items-center space-x-1">
+                        <x-icon name="check-circle" class="w-3.5 h-3.5" />
+                        <span>Transaksi ini telah selesai diproses sepenuhnya.</span>
+                    </span>
+                @else
+                    Status pesanan saat ini: <strong class="text-[#212121]">{{ $order->status }}</strong>
+                @endif
             </div>
 
             <div class="flex items-center space-x-3">
-                @if(in_array($order->status, ['DIBAYAR', 'DIPROSES', 'GAGAL']))
+                @if($canRetry)
                     <!-- Tombol Kirim Ulang ke Digiflazz -->
-                    <form action="{{ route('admin.orders.retry', $order->id) }}" method="POST">
+                    <form id="form-retry-digiflazz" action="{{ route('admin.orders.retry', $order->id) }}" method="POST">
                         @csrf
-                        <button type="submit" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-[#212121] bg-[#F9F8F6] border border-[#212121]/15 hover:bg-[#212121]/5 transition shadow-xs">
-                            <x-icon name="refresh" class="w-3.5 h-3.5 text-[#6D0808]" />
+                        <button type="button" onclick="confirmRetryDigiflazz()" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#6D0808] hover:bg-[#540606] transition shadow-xs cursor-pointer">
+                            <x-icon name="refresh" class="w-3.5 h-3.5 text-white" />
                             <span>Kirim Ulang ke Digiflazz</span>
                         </button>
                     </form>
 
                     <!-- Tombol Refund Manual (PRD FR-FUL-3) -->
-                    <button type="button" onclick="document.getElementById('modal-refund').classList.remove('hidden')" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-red-700 hover:bg-red-800 transition shadow-xs">
-                        <x-icon name="alert-triangle" class="w-3.5 h-3.5" />
+                    <button type="button" onclick="document.getElementById('modal-refund').classList.remove('hidden')" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 transition shadow-xs cursor-pointer">
+                        <x-icon name="alert-triangle" class="w-3.5 h-3.5 text-red-600" />
                         <span>Tandai Refund Manual Midtrans</span>
                     </button>
                 @endif
@@ -199,4 +238,34 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function confirmRetryDigiflazz() {
+    const itemName = @json($order->product->name);
+    const userIdGame = @json($order->user_id_game);
+    const msg = 'Apakah Anda yakin ingin memproses ulang pemenuhan item "' + itemName + '" ke ID Game ' + userIdGame + ' melalui Digiflazz? Pastikan saldo deposit Anda mencukupi.';
+
+    if (window.kaidenAlert) {
+        window.kaidenAlert.confirm(
+            'Konfirmasi Pemrosesan Ulang Digiflazz',
+            msg,
+            function() {
+                if (window.kaidenLoading) {
+                    window.kaidenLoading.show('Menghubungi API Digiflazz...');
+                }
+                document.getElementById('form-retry-digiflazz').submit();
+            },
+            null,
+            'Ya, Kirim Sekarang',
+            'Batal'
+        );
+    } else {
+        if (confirm(msg)) {
+            document.getElementById('form-retry-digiflazz').submit();
+        }
+    }
+}
+</script>
+@endpush
 
